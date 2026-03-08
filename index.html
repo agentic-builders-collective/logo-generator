@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCII Logo Generator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>ASCII Logo Generator</h1>
+      <p>Create block-style ASCII art logos</p>
+    </header>
+
+    <main>
+      <div class="preview-section">
+        <div class="preview-container">
+          <div class="logo" id="logo-preview">
+            <div class="ascii" id="ascii-output"></div>
+            <div class="rule" id="rule-output"></div>
+            <div class="tagline" id="tagline-output"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-section">
+        <div class="control-group">
+          <label for="logo-text">Text (a-z)</label>
+          <input type="text" id="logo-text" value="abc" maxlength="12" placeholder="abc">
+        </div>
+
+        <div class="control-group">
+          <label for="tagline-text">Tagline</label>
+          <input type="text" id="tagline-text" value="agentic builders collective" maxlength="120" placeholder="your tagline here">
+        </div>
+
+        <div class="control-group">
+          <label for="block-style">Block Style</label>
+          <select id="block-style">
+            <option value="solid">Solid (███)</option>
+            <option value="shade">Shade (▓▓▓)</option>
+            <option value="medium">Medium (▒▒▒)</option>
+            <option value="light">Light (░░░)</option>
+            <option value="outline">Outline (█░█)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="text-color">Text Color</label>
+          <input type="color" id="text-color" value="#ffffff">
+        </div>
+
+        <div class="control-group">
+          <label for="bg-color">Background</label>
+          <div class="bg-options">
+            <button class="bg-option active" data-bg="#000000">Black</button>
+            <button class="bg-option" data-bg="#0d1117">Dark</button>
+            <button class="bg-option" data-bg="#1a1a2e">Navy</button>
+            <button class="bg-option" data-bg="#ffffff">White</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label for="font-size">Font Size: <span id="font-size-value">14</span>px</label>
+          <input type="range" id="font-size" min="8" max="24" value="14">
+        </div>
+
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="show-rule" checked> Show separator line
+          </label>
+        </div>
+
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="show-tagline" checked> Show tagline
+          </label>
+        </div>
+
+        <div class="export-buttons">
+          <button id="copy-text" class="btn btn-secondary">Copy Text</button>
+          <button id="export-html" class="btn btn-primary">Export HTML</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <p>Vanilla JS • Easy GitHub Pages deployment</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

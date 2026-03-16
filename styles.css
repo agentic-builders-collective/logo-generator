@@ -35,24 +35,26 @@ body {
 
 header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 header h1 {
-  font-size: 2rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 header p {
   color: var(--text-secondary);
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
 }
 
 main {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 1fr 320px;
   gap: 2rem;
+  align-items: start;
 }
 
 @media (max-width: 768px) {
@@ -70,11 +72,15 @@ main {
   align-items: center;
   justify-content: center;
   min-height: 400px;
+  position: sticky;
+  top: 1rem;
+  overflow: auto;
 }
 
 .preview-container {
   border-radius: 8px;
   overflow: hidden;
+  max-width: 100%;
 }
 
 .logo {
@@ -111,10 +117,10 @@ main {
 .controls-section {
   background: var(--bg-secondary);
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.5rem;
   height: fit-content;
 }
 
@@ -134,11 +140,11 @@ main {
 .control-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .control-group label {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -147,10 +153,10 @@ main {
 .control-group select {
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.75rem;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 0.9rem;
   outline: none;
   transition: border-color 0.2s;
 }
@@ -220,9 +226,9 @@ main {
 
 .palette-swatch {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 1.2;
   border: 2px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: border-color 0.2s, transform 0.15s;
 }
@@ -245,14 +251,14 @@ main {
 
 .bg-option {
   flex: 1;
-  min-width: 60px;
-  padding: 0.5rem;
+  min-width: 50px;
+  padding: 0.4rem;
   border: 2px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--bg-tertiary);
   color: var(--text-primary);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   transition: border-color 0.2s;
 }
 
@@ -270,14 +276,14 @@ main {
 
 .align-option {
   flex: 1;
-  min-width: 60px;
-  padding: 0.5rem;
+  min-width: 50px;
+  padding: 0.4rem;
   border: 2px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--bg-tertiary);
   color: var(--text-primary);
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   transition: border-color 0.2s;
 }
 
@@ -296,14 +302,14 @@ main {
 
 .btn {
   flex: 1;
-  padding: 0.875rem 1rem;
+  padding: 0.6rem 0.75rem;
   border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
-  min-width: 80px;
+  min-width: 70px;
 }
 
 .btn:hover {

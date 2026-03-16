@@ -34,7 +34,7 @@
               <input type="text" id="logo-text" value="ABC" maxlength="12" placeholder="ABC">
             </div>
             <div class="control-group">
-              <label for="tagline-text">Tagline</label>
+              <label for="tagline-text">Title</label>
               <input type="text" id="tagline-text" value="agentic builders collective" maxlength="120" placeholder="your tagline here">
             </div>
           </div>
@@ -98,11 +98,29 @@
               <input type="range" id="line-height" min="0.8" max="1.8" step="0.05" value="1.15">
             </div>
             <div class="control-group">
-              <label for="tagline-size">Tagline Size: <span id="tagline-size-value">16</span>px</label>
+              <label for="padding-size">Padding: <span id="padding-value">60</span>px</label>
+              <input type="range" id="padding-size" min="20" max="120" value="60">
+            </div>
+            <div class="control-group">
+              <label>Alignment</label>
+              <div class="align-options">
+                <button class="align-option" data-align="left">Left</button>
+                <button class="align-option active" data-align="center">Centre</button>
+                <button class="align-option" data-align="right">Right</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="section">
+          <summary class="section-header">Title</summary>
+          <div class="section-body">
+            <div class="control-group">
+              <label for="tagline-size">Size: <span id="tagline-size-value">16</span>px</label>
               <input type="range" id="tagline-size" min="8" max="36" value="16">
             </div>
             <div class="control-group">
-              <label for="tagline-font">Tagline Font</label>
+              <label for="tagline-font">Font</label>
               <select id="tagline-font">
                 <option value="mono">JetBrains Mono</option>
                 <option value="firacode">Fira Code</option>
@@ -115,11 +133,11 @@
               </select>
             </div>
             <div class="control-group">
-              <label for="tagline-spacing">Tagline Spacing: <span id="tagline-spacing-value">4</span>px</label>
+              <label for="tagline-spacing">Spacing: <span id="tagline-spacing-value">4</span>px</label>
               <input type="range" id="tagline-spacing" min="0" max="20" value="4">
             </div>
             <div class="control-group">
-              <label for="tagline-case">Tagline Case</label>
+              <label for="tagline-case">Case</label>
               <select id="tagline-case">
                 <option value="none">As typed</option>
                 <option value="uppercase">UPPERCASE</option>
@@ -128,20 +146,13 @@
             </div>
             <div class="control-group">
               <label>
-                <input type="checkbox" id="tagline-single-line" checked> Tagline single line
+                <input type="checkbox" id="tagline-single-line" checked> Single line
               </label>
             </div>
             <div class="control-group">
-              <label for="padding-size">Padding: <span id="padding-value">60</span>px</label>
-              <input type="range" id="padding-size" min="20" max="120" value="60">
-            </div>
-            <div class="control-group">
-              <label>Alignment</label>
-              <div class="align-options">
-                <button class="align-option" data-align="left">Left</button>
-                <button class="align-option active" data-align="center">Centre</button>
-                <button class="align-option" data-align="right">Right</button>
-              </div>
+              <label>
+                <input type="checkbox" id="show-tagline" checked> Show title
+              </label>
             </div>
           </div>
         </details>
@@ -182,11 +193,6 @@
               </div>
               <div id="rule-style-group"></div>
               <div id="rule-custom-group"></div>
-            </div>
-            <div class="control-group">
-              <label>
-                <input type="checkbox" id="show-tagline" checked> Show tagline
-              </label>
             </div>
           </div>
         </details>

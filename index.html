@@ -74,8 +74,16 @@
               </select>
             </div>
             <div class="control-group">
-              <label for="italic-slider">Italic: <span id="italic-value">0</span>°</label>
-              <input type="range" id="italic-slider" min="-30" max="30" step="1" value="0">
+              <label for="italic-mode">Italic</label>
+              <select id="italic-mode">
+                <option value="none">None</option>
+                <option value="skew">Skew (visual)</option>
+                <option value="block">Block (text)</option>
+              </select>
+            </div>
+            <div class="control-group" id="italic-amount-group" style="display:none">
+              <label for="italic-slider"><span id="italic-label">Amount</span>: <span id="italic-value">0</span><span id="italic-unit"></span></label>
+              <input type="range" id="italic-slider" min="-20" max="20" step="1" value="0">
             </div>
             <div class="control-group" id="block-style-group" style="display:none">
               <label for="block-style">Block Style</label>

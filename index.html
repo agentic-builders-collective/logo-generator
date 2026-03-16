@@ -26,169 +26,165 @@
 
       <div class="controls-section">
 
-        <!-- CONTENT -->
-        <div class="section-label">───── CONTENT ─────</div>
-
-        <div class="control-group">
-          <label for="logo-text">Text</label>
-          <input type="text" id="logo-text" value="ABC" maxlength="12" placeholder="ABC">
-        </div>
-
-        <div class="control-group">
-          <label for="tagline-text">Tagline</label>
-          <input type="text" id="tagline-text" value="agentic builders collective" maxlength="120" placeholder="your tagline here">
-        </div>
-
-        <!-- STYLE -->
-        <div class="section-label">───── STYLE ─────</div>
-
-        <div class="control-group">
-          <label for="font-select">Font</label>
-          <select id="font-select">
-            <option value="block">Block (bold shadows)</option>
-            <option value="shade">Shade (░ fill)</option>
-            <option value="huge">Huge (maximum impact)</option>
-            <option value="slick">Slick (rounded)</option>
-            <option value="chrome">Chrome (compact)</option>
-            <option value="tiny">Tiny (half-blocks)</option>
-            <option value="pixel">Pixel (lowercase)</option>
-          </select>
-        </div>
-
-        <div class="control-group">
-          <label>Colour Palette</label>
-          <div class="palette-options" id="palette-options"></div>
-        </div>
-
-        <div class="control-group">
-          <label for="gradient-direction">Gradient Direction</label>
-          <select id="gradient-direction">
-            <option value="vertical">Vertical</option>
-            <option value="horizontal">Horizontal</option>
-            <option value="diagonal">Diagonal</option>
-          </select>
-        </div>
-
-        <div class="control-group" id="block-style-group" style="display:none">
-          <label for="block-style">Block Style</label>
-          <select id="block-style">
-            <option value="solid">Solid</option>
-            <option value="shade">Shade</option>
-            <option value="medium">Medium</option>
-            <option value="light">Light</option>
-            <option value="outline">Outline</option>
-          </select>
-        </div>
-
-        <!-- LAYOUT -->
-        <div class="section-label">───── LAYOUT ─────</div>
-
-        <div class="control-group">
-          <label for="logo-size">Logo Size: <span id="logo-size-value">14</span>px</label>
-          <input type="range" id="logo-size" min="6" max="32" value="14">
-        </div>
-
-        <div class="control-group">
-          <label for="line-height">Line Height: <span id="line-height-value">1.15</span></label>
-          <input type="range" id="line-height" min="0.8" max="1.8" step="0.05" value="1.15">
-        </div>
-
-        <div class="control-group">
-          <label for="tagline-size">Tagline Size: <span id="tagline-size-value">14</span>px</label>
-          <input type="range" id="tagline-size" min="8" max="24" value="14">
-        </div>
-
-        <div class="control-group">
-          <label for="tagline-font">Tagline Font</label>
-          <select id="tagline-font">
-            <option value="mono">JetBrains Mono</option>
-            <option value="firacode">Fira Code</option>
-            <option value="spacemono">Space Mono</option>
-            <option value="ibmplex">IBM Plex Mono</option>
-            <option value="majormono">Major Mono Display</option>
-            <option value="atkinson">Atkinson Hyperlegible</option>
-            <option value="sans">Space Grotesk</option>
-            <option value="serif">Georgia</option>
-          </select>
-        </div>
-
-        <div class="control-group">
-          <label for="tagline-spacing">Tagline Spacing: <span id="tagline-spacing-value">4</span>px</label>
-          <input type="range" id="tagline-spacing" min="0" max="20" value="4">
-        </div>
-
-        <div class="control-group">
-          <label for="tagline-case">Tagline Case</label>
-          <select id="tagline-case">
-            <option value="none">As typed</option>
-            <option value="uppercase">UPPERCASE</option>
-            <option value="lowercase">lowercase</option>
-          </select>
-        </div>
-
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="tagline-single-line" checked> Tagline single line
-          </label>
-        </div>
-
-        <div class="control-group">
-          <label for="padding-size">Padding: <span id="padding-value">60</span>px</label>
-          <input type="range" id="padding-size" min="20" max="120" value="60">
-        </div>
-
-        <div class="control-group">
-          <label>Alignment</label>
-          <div class="align-options">
-            <button class="align-option" data-align="left">Left</button>
-            <button class="align-option active" data-align="center">Centre</button>
-            <button class="align-option" data-align="right">Right</button>
+        <details class="section" open>
+          <summary class="section-header">Content</summary>
+          <div class="section-body">
+            <div class="control-group">
+              <label for="logo-text">Text</label>
+              <input type="text" id="logo-text" value="ABC" maxlength="12" placeholder="ABC">
+            </div>
+            <div class="control-group">
+              <label for="tagline-text">Tagline</label>
+              <input type="text" id="tagline-text" value="agentic builders collective" maxlength="120" placeholder="your tagline here">
+            </div>
           </div>
-        </div>
+        </details>
 
-        <!-- DISPLAY -->
-        <div class="section-label">───── DISPLAY ─────</div>
-
-        <div class="control-group">
-          <label>Background</label>
-          <div class="bg-options">
-            <button class="bg-option active" data-bg="#000000">Black</button>
-            <button class="bg-option" data-bg="#0d1117">Dark</button>
-            <button class="bg-option" data-bg="#1a1a2e">Navy</button>
-            <button class="bg-option" data-bg="#ffffff">White</button>
+        <details class="section">
+          <summary class="section-header">Style</summary>
+          <div class="section-body">
+            <div class="control-group">
+              <label for="font-select">Font</label>
+              <select id="font-select">
+                <option value="block">Block (bold shadows)</option>
+                <option value="shade">Shade (░ fill)</option>
+                <option value="huge">Huge (maximum impact)</option>
+                <option value="slick">Slick (rounded)</option>
+                <option value="chrome">Chrome (compact)</option>
+                <option value="tiny">Tiny (half-blocks)</option>
+                <option value="pixel">Pixel (lowercase)</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>Colour Palette</label>
+              <div class="palette-options" id="palette-options"></div>
+            </div>
+            <div class="control-group">
+              <label for="gradient-direction">Gradient Direction</label>
+              <select id="gradient-direction">
+                <option value="vertical">Vertical</option>
+                <option value="horizontal">Horizontal</option>
+                <option value="diagonal">Diagonal</option>
+              </select>
+            </div>
+            <div class="control-group" id="block-style-group" style="display:none">
+              <label for="block-style">Block Style</label>
+              <select id="block-style">
+                <option value="solid">Solid</option>
+                <option value="shade">Shade</option>
+                <option value="medium">Medium</option>
+                <option value="light">Light</option>
+                <option value="outline">Outline</option>
+              </select>
+            </div>
           </div>
-        </div>
+        </details>
 
-        <div class="control-group" id="text-color-group" style="display:none">
-          <label for="text-color">Text Colour</label>
-          <input type="color" id="text-color" value="#ffffff">
-        </div>
+        <details class="section">
+          <summary class="section-header">Layout</summary>
+          <div class="section-body">
+            <div class="control-group">
+              <label for="logo-size">Logo Size: <span id="logo-size-value">21</span>px</label>
+              <input type="range" id="logo-size" min="6" max="48" value="21">
+            </div>
+            <div class="control-group">
+              <label for="line-height">Line Height: <span id="line-height-value">1.15</span></label>
+              <input type="range" id="line-height" min="0.8" max="1.8" step="0.05" value="1.15">
+            </div>
+            <div class="control-group">
+              <label for="tagline-size">Tagline Size: <span id="tagline-size-value">16</span>px</label>
+              <input type="range" id="tagline-size" min="8" max="36" value="16">
+            </div>
+            <div class="control-group">
+              <label for="tagline-font">Tagline Font</label>
+              <select id="tagline-font">
+                <option value="mono">JetBrains Mono</option>
+                <option value="firacode">Fira Code</option>
+                <option value="spacemono">Space Mono</option>
+                <option value="ibmplex">IBM Plex Mono</option>
+                <option value="majormono">Major Mono Display</option>
+                <option value="atkinson">Atkinson Hyperlegible</option>
+                <option value="sans">Space Grotesk</option>
+                <option value="serif">Georgia</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label for="tagline-spacing">Tagline Spacing: <span id="tagline-spacing-value">4</span>px</label>
+              <input type="range" id="tagline-spacing" min="0" max="20" value="4">
+            </div>
+            <div class="control-group">
+              <label for="tagline-case">Tagline Case</label>
+              <select id="tagline-case">
+                <option value="none">As typed</option>
+                <option value="uppercase">UPPERCASE</option>
+                <option value="lowercase">lowercase</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>
+                <input type="checkbox" id="tagline-single-line" checked> Tagline single line
+              </label>
+            </div>
+            <div class="control-group">
+              <label for="padding-size">Padding: <span id="padding-value">60</span>px</label>
+              <input type="range" id="padding-size" min="20" max="120" value="60">
+            </div>
+            <div class="control-group">
+              <label>Alignment</label>
+              <div class="align-options">
+                <button class="align-option" data-align="left">Left</button>
+                <button class="align-option active" data-align="center">Centre</button>
+                <button class="align-option" data-align="right">Right</button>
+              </div>
+            </div>
+          </div>
+        </details>
 
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="show-rule" checked> Show separator line
-          </label>
-        </div>
+        <details class="section">
+          <summary class="section-header">Display</summary>
+          <div class="section-body">
+            <div class="control-group">
+              <label>Background</label>
+              <div class="bg-options">
+                <button class="bg-option active" data-bg="#000000">Black</button>
+                <button class="bg-option" data-bg="#0d1117">Dark</button>
+                <button class="bg-option" data-bg="#1a1a2e">Navy</button>
+                <button class="bg-option" data-bg="#ffffff">White</button>
+              </div>
+            </div>
+            <div class="control-group" id="text-color-group" style="display:none">
+              <label for="text-color">Text Colour</label>
+              <input type="color" id="text-color" value="#ffffff">
+            </div>
+            <div class="control-group">
+              <label>
+                <input type="checkbox" id="show-rule" checked> Show separator line
+              </label>
+            </div>
+            <div class="control-group">
+              <label>
+                <input type="checkbox" id="show-tagline" checked> Show tagline
+              </label>
+            </div>
+          </div>
+        </details>
 
-        <div class="control-group">
-          <label>
-            <input type="checkbox" id="show-tagline" checked> Show tagline
-          </label>
-        </div>
+        <details class="section">
+          <summary class="section-header">Export</summary>
+          <div class="section-body">
+            <div class="export-buttons">
+              <button id="copy-text" class="btn btn-secondary">Copy Text</button>
+              <button id="export-html" class="btn btn-primary">Export HTML</button>
+              <button id="export-png" class="btn btn-primary">Export PNG</button>
+            </div>
+          </div>
+        </details>
 
-        <!-- EXPORT -->
-        <div class="section-label">───── EXPORT ─────</div>
-
-        <div class="export-buttons">
-          <button id="copy-text" class="btn btn-secondary">Copy Text</button>
-          <button id="export-html" class="btn btn-primary">Export HTML</button>
-          <button id="export-png" class="btn btn-primary">Export PNG</button>
-        </div>
       </div>
     </main>
 
     <footer>
-      <p>Vanilla JS &bull; Fonts by <a href="https://github.com/dominikwilkowski/cfonts" style="color:var(--accent)">cfonts</a></p>
+      <p>Vanilla JS &bull; Fonts by <a href="https://github.com/dominikwilkowski/cfonts" style="color:var(--accent)">cfonts</a> &bull; Inspired by <a href="https://github.com/shinshin86/oh-my-logo" style="color:var(--accent)">oh-my-logo</a></p>
     </footer>
   </div>
 

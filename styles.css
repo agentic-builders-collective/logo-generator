@@ -124,17 +124,61 @@ main {
   height: fit-content;
 }
 
-/* Section labels */
-.section-label {
+/* Collapsible sections */
+.section {
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
+
+.section:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.section-header {
   font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 2px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.4rem 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.section-header::-webkit-details-marker {
+  display: none;
+}
+
+.section-header::before {
+  content: '\25B6';
+  font-size: 0.5rem;
+  line-height: 1;
+  display: inline-block;
+  width: 0.75rem;
   text-align: center;
-  opacity: 0.5;
-  font-family: 'JetBrains Mono', monospace;
-  margin-top: 0.25rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.section[open] > .section-header::before {
+  content: '\25BC';
+}
+
+.section-header:hover {
+  color: var(--text-primary);
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-top: 0.5rem;
 }
 
 .control-group {

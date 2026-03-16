@@ -127,6 +127,8 @@
   const customColor2Input = document.getElementById('custom-color-2');
   const paletteContainer = document.getElementById('palette-options');
   const directionSelect = document.getElementById('gradient-direction');
+  const italicSlider = document.getElementById('italic-slider');
+  const italicValue = document.getElementById('italic-value');
 
   // State
   let state = {
@@ -154,7 +156,8 @@
     exportScale: 150,
     transparentBg: false,
     customColor1: '#ff6b6b',
-    customColor2: '#4ecdc4'
+    customColor2: '#4ecdc4',
+    italic: 0
   };
 
   // --- Colour utilities ---
@@ -436,7 +439,8 @@
         exportScale: Number.isFinite(saved.exportScale) ? saved.exportScale : state.exportScale,
         transparentBg: typeof saved.transparentBg === 'boolean' ? saved.transparentBg : state.transparentBg,
         customColor1: saved.customColor1 || state.customColor1,
-        customColor2: saved.customColor2 || state.customColor2
+        customColor2: saved.customColor2 || state.customColor2,
+        italic: Number.isFinite(saved.italic) ? saved.italic : (saved.italic === true ? -12 : state.italic)
       };
     } catch (error) { /* ignore */ }
   }
@@ -524,6 +528,8 @@
     exportScaleSlider.value = state.exportScale;
     exportScaleValue.textContent = state.exportScale;
     transparentBgCheckbox.checked = state.transparentBg;
+    italicSlider.value = state.italic;
+    italicValue.textContent = state.italic;
     customColor1Input.value = state.customColor1;
     customColor2Input.value = state.customColor2;
     customColorsGroup.style.display = state.palette === 'custom' ? '' : 'none';
@@ -708,6 +714,13 @@
       saveState();
     });
 
+    italicSlider.addEventListener('input', function(e) {
+      state.italic = parseInt(e.target.value);
+      italicValue.textContent = state.italic;
+      saveState();
+      render();
+    });
+
     copyTextBtn.addEventListener('click', copyText);
     exportHtmlBtn.addEventListener('click', exportHtml);
     exportPngBtn.addEventListener('click', exportPng);
@@ -722,6 +735,8 @@
     asciiOutput.innerHTML = gridToHtml(grid, state.palette, state.gradientDirection, state.textColor);
     asciiOutput.style.fontSize = state.logoSize + 'px';
     asciiOutput.style.lineHeight = String(state.lineHeight);
+    asciiOutput.style.transform = state.italic ? 'skewX(' + state.italic + 'deg)' : '';
+    asciiOutput.style.display = 'inline-block';
 
     if (state.showRule && hasText) {
       var ruleColor = getPaletteRuleColor();
@@ -805,7 +820,7 @@
       // Both JetBrains Mono and Space Grotesk already in the main import
     }
 
-    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + state.bgColor + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.padding + 'px; }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: 8px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: 1.6; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
+    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + state.bgColor + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.padding + 'px; }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; display: inline-block;' + (state.italic ? ' transform: skewX(' + state.italic + 'deg);' : '') + ' }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: 8px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: 1.6; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
 
     var blob = new Blob([html], { type: 'text/html' });
     var link = document.createElement('a');
@@ -907,6 +922,14 @@
         var totalCols = gridCols;
         var asciiX = alignOffset(asciiWidth);
 
+        if (state.italic) {
+          ctx.save();
+          var skew = Math.tan(state.italic * Math.PI / 180);
+          // Shear around the vertical centre of the ASCII block
+          var asciiMidY = pad + asciiHeight / 2;
+          ctx.transform(1, 0, skew, 1, -skew * asciiMidY, 0);
+        }
+
         grid.forEach(function(row, ri) {
           row.forEach(function(cell, ci) {
             if (cell.char === ' ' && cell.channel === 0) return;
@@ -926,6 +949,10 @@
             ctx.fillText(cell.char, asciiX + ci * asciiCharWidth, pad + ri * asciiLineHeight);
           });
         });
+
+        if (state.italic) {
+          ctx.restore();
+        }
       }
 
       var yOffset = pad + asciiHeight;

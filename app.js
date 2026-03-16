@@ -115,6 +115,9 @@
   const copyTextBtn = document.getElementById('copy-text');
   const exportHtmlBtn = document.getElementById('export-html');
   const exportPngBtn = document.getElementById('export-png');
+  const exportScaleSlider = document.getElementById('export-scale');
+  const exportScaleValue = document.getElementById('export-scale-value');
+  const transparentBgCheckbox = document.getElementById('transparent-bg');
   const paletteContainer = document.getElementById('palette-options');
   const directionSelect = document.getElementById('gradient-direction');
 
@@ -126,8 +129,8 @@
     blockStyle: 'solid',
     textColor: '#ffffff',
     bgColor: '#000000',
-    logoSize: 14,
-    taglineSize: 14,
+    logoSize: 21,
+    taglineSize: 16,
     taglineFont: 'mono',
     taglineSpacing: 4,
     taglineTransform: 'none',
@@ -138,7 +141,9 @@
     showRule: true,
     showTagline: true,
     palette: 'sunset',
-    gradientDirection: 'vertical'
+    gradientDirection: 'vertical',
+    exportScale: 150,
+    transparentBg: false
   };
 
   // --- Colour utilities ---
@@ -409,7 +414,9 @@
         showRule: typeof saved.showRule === 'boolean' ? saved.showRule : state.showRule,
         showTagline: typeof saved.showTagline === 'boolean' ? saved.showTagline : state.showTagline,
         palette: saved.palette && GRADIENT_PALETTES[saved.palette] ? saved.palette : state.palette,
-        gradientDirection: saved.gradientDirection || state.gradientDirection
+        gradientDirection: saved.gradientDirection || state.gradientDirection,
+        exportScale: Number.isFinite(saved.exportScale) ? saved.exportScale : state.exportScale,
+        transparentBg: typeof saved.transparentBg === 'boolean' ? saved.transparentBg : state.transparentBg
       };
     } catch (error) { /* ignore */ }
   }
@@ -466,6 +473,9 @@
     paletteContainer.querySelectorAll('.palette-swatch').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.palette === state.palette);
     });
+    exportScaleSlider.value = state.exportScale;
+    exportScaleValue.textContent = state.exportScale;
+    transparentBgCheckbox.checked = state.transparentBg;
     textColorGroup.style.display = state.palette === 'mono' ? '' : 'none';
     blockStyleGroup.style.display = FONT_OPTIONS[state.font].type === 'pixel' ? '' : 'none';
   }
@@ -606,6 +616,17 @@
       render();
     });
 
+    exportScaleSlider.addEventListener('input', function(e) {
+      state.exportScale = parseInt(e.target.value);
+      exportScaleValue.textContent = state.exportScale;
+      saveState();
+    });
+
+    transparentBgCheckbox.addEventListener('change', function(e) {
+      state.transparentBg = e.target.checked;
+      saveState();
+    });
+
     copyTextBtn.addEventListener('click', copyText);
     exportHtmlBtn.addEventListener('click', exportHtml);
     exportPngBtn.addEventListener('click', exportPng);
@@ -722,7 +743,7 @@
     var palette = GRADIENT_PALETTES[state.palette];
     var colors = palette ? palette.colors : null;
 
-    var scale = 3;
+    var scale = state.exportScale / 100 * 3;
 
     document.fonts.ready.then(function() {
       // Measure dimensions
@@ -785,8 +806,10 @@
       var ctx = canvas.getContext('2d');
 
       // Background
-      ctx.fillStyle = state.bgColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (!state.transparentBg) {
+        ctx.fillStyle = state.bgColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
 
       // Alignment offset helper
       function alignOffset(itemWidth) {

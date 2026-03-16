@@ -172,6 +172,15 @@
         <details class="section">
           <summary class="section-header">Export</summary>
           <div class="section-body">
+            <div class="control-group">
+              <label for="export-scale">Export Scale: <span id="export-scale-value">150</span>%</label>
+              <input type="range" id="export-scale" min="100" max="300" step="25" value="150">
+            </div>
+            <div class="control-group">
+              <label>
+                <input type="checkbox" id="transparent-bg"> Transparent background
+              </label>
+            </div>
             <div class="export-buttons">
               <button id="copy-text" class="btn btn-secondary">Copy Text</button>
               <button id="export-html" class="btn btn-primary">Export HTML</button>

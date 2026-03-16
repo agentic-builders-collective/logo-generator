@@ -67,9 +67,15 @@
     pixel:  { name: 'Pixel',  type: 'pixel' }
   };
 
+  const TAGLINE_FONT_MAP = {
+    mono: "'JetBrains Mono', 'Courier New', monospace",
+    sans: "'Space Grotesk', -apple-system, sans-serif",
+    serif: "Georgia, 'Times New Roman', serif"
+  };
+
   const MAX_TEXT_LENGTH = 12;
   const MAX_TAGLINE_LENGTH = 120;
-  const STORAGE_KEY = 'abc-logo-generator:v3';
+  const STORAGE_KEY = 'abc-logo-generator:v4';
 
   // DOM Elements
   const asciiOutput = document.getElementById('ascii-output');
@@ -84,13 +90,26 @@
   const blockStyleGroup = document.getElementById('block-style-group');
   const textColorInput = document.getElementById('text-color');
   const textColorGroup = document.getElementById('text-color-group');
-  const fontSizeSlider = document.getElementById('font-size');
-  const fontSizeValue = document.getElementById('font-size-value');
+  const logoSizeSlider = document.getElementById('logo-size');
+  const logoSizeValue = document.getElementById('logo-size-value');
+  const lineHeightSlider = document.getElementById('line-height');
+  const lineHeightValue = document.getElementById('line-height-value');
+  const taglineSizeSlider = document.getElementById('tagline-size');
+  const taglineSizeValue = document.getElementById('tagline-size-value');
+  const taglineFontSelect = document.getElementById('tagline-font');
+  const taglineSpacingSlider = document.getElementById('tagline-spacing');
+  const taglineSpacingValue = document.getElementById('tagline-spacing-value');
+  const taglineCaseSelect = document.getElementById('tagline-case');
+  const taglineSingleLineCheckbox = document.getElementById('tagline-single-line');
+  const paddingSlider = document.getElementById('padding-size');
+  const paddingValue = document.getElementById('padding-value');
+  const alignOptions = document.querySelectorAll('.align-option');
   const showRuleCheckbox = document.getElementById('show-rule');
   const showTaglineCheckbox = document.getElementById('show-tagline');
   const bgOptions = document.querySelectorAll('.bg-option');
   const copyTextBtn = document.getElementById('copy-text');
   const exportHtmlBtn = document.getElementById('export-html');
+  const exportPngBtn = document.getElementById('export-png');
   const paletteContainer = document.getElementById('palette-options');
   const directionSelect = document.getElementById('gradient-direction');
 
@@ -102,7 +121,15 @@
     blockStyle: 'solid',
     textColor: '#ffffff',
     bgColor: '#000000',
-    fontSize: 14,
+    logoSize: 14,
+    taglineSize: 14,
+    taglineFont: 'mono',
+    taglineSpacing: 4,
+    taglineTransform: 'none',
+    taglineSingleLine: true,
+    lineHeight: 1.15,
+    padding: 60,
+    align: 'center',
     showRule: true,
     showTagline: true,
     palette: 'sunset',
@@ -295,19 +322,30 @@
   }
 
   function generateTaglinePlain(tagline) {
-    return tagline.split('').map(function(c) { return c === ' ' ? '  ' : c + ' '; }).join('');
+    // Approximate the CSS letter-spacing visually in plain text
+    var spacing = state.taglineSpacing;
+    var transform = state.taglineTransform;
+    var text = tagline;
+    if (transform === 'uppercase') text = text.toUpperCase();
+    else if (transform === 'lowercase') text = text.toLowerCase();
+
+    if (spacing >= 2) {
+      return text.split('').map(function(c) {
+        return c === ' ' ? '  ' : c + ' ';
+      }).join('');
+    }
+    return text;
   }
 
   function generateTaglineHtml(tagline, paletteKey, direction, textColor) {
     var palette = GRADIENT_PALETTES[paletteKey];
     var colors = palette ? palette.colors : null;
-    var expanded = tagline.split('').map(function(c) { return c === ' ' ? '  ' : c + ' '; }).join('');
 
     if (!colors) {
-      return '<span style="color:' + textColor + '">' + escapeHtml(expanded) + '</span>';
+      return '<span style="color:' + textColor + '">' + escapeHtml(tagline) + '</span>';
     }
 
-    var chars = expanded.split('');
+    var chars = tagline.split('');
     var totalCols = chars.length;
     return chars.map(function(c, ci) {
       if (c === ' ') return ' ';
@@ -338,11 +376,15 @@
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
         // Try legacy keys
-        raw = localStorage.getItem('abc-logo-generator:v2') || localStorage.getItem('abc-logo-generator:v1');
+        raw = localStorage.getItem('abc-logo-generator:v3') || localStorage.getItem('abc-logo-generator:v2') || localStorage.getItem('abc-logo-generator:v1');
       }
       if (!raw) return;
 
       var saved = JSON.parse(raw);
+
+      // Legacy migration: map fontSize to logoSize
+      var logoSize = Number.isFinite(saved.logoSize) ? saved.logoSize : (Number.isFinite(saved.fontSize) ? saved.fontSize : state.logoSize);
+
       state = {
         text: (saved.text || state.text).slice(0, MAX_TEXT_LENGTH),
         tagline: (saved.tagline || state.tagline).slice(0, MAX_TAGLINE_LENGTH),
@@ -350,7 +392,15 @@
         blockStyle: saved.blockStyle || state.blockStyle,
         textColor: saved.textColor || state.textColor,
         bgColor: saved.bgColor || state.bgColor,
-        fontSize: Number.isFinite(saved.fontSize) ? saved.fontSize : state.fontSize,
+        logoSize: logoSize,
+        taglineSize: Number.isFinite(saved.taglineSize) ? saved.taglineSize : state.taglineSize,
+        taglineFont: saved.taglineFont && TAGLINE_FONT_MAP[saved.taglineFont] ? saved.taglineFont : state.taglineFont,
+        taglineSpacing: Number.isFinite(saved.taglineSpacing) ? saved.taglineSpacing : state.taglineSpacing,
+        taglineTransform: ['none', 'uppercase', 'lowercase'].indexOf(saved.taglineTransform) !== -1 ? saved.taglineTransform : state.taglineTransform,
+        taglineSingleLine: typeof saved.taglineSingleLine === 'boolean' ? saved.taglineSingleLine : state.taglineSingleLine,
+        lineHeight: Number.isFinite(saved.lineHeight) ? saved.lineHeight : state.lineHeight,
+        padding: Number.isFinite(saved.padding) ? saved.padding : state.padding,
+        align: ['left', 'center', 'right'].indexOf(saved.align) !== -1 ? saved.align : state.align,
         showRule: typeof saved.showRule === 'boolean' ? saved.showRule : state.showRule,
         showTagline: typeof saved.showTagline === 'boolean' ? saved.showTagline : state.showTagline,
         palette: saved.palette && GRADIENT_PALETTES[saved.palette] ? saved.palette : state.palette,
@@ -386,13 +436,27 @@
     fontSelect.value = state.font;
     blockStyleSelect.value = state.blockStyle;
     textColorInput.value = state.textColor;
-    fontSizeSlider.value = state.fontSize;
-    fontSizeValue.textContent = state.fontSize;
+    logoSizeSlider.value = state.logoSize;
+    logoSizeValue.textContent = state.logoSize;
+    lineHeightSlider.value = state.lineHeight;
+    lineHeightValue.textContent = state.lineHeight;
+    taglineSizeSlider.value = state.taglineSize;
+    taglineSizeValue.textContent = state.taglineSize;
+    taglineFontSelect.value = state.taglineFont;
+    taglineSpacingSlider.value = state.taglineSpacing;
+    taglineSpacingValue.textContent = state.taglineSpacing;
+    taglineCaseSelect.value = state.taglineTransform;
+    taglineSingleLineCheckbox.checked = state.taglineSingleLine;
+    paddingSlider.value = state.padding;
+    paddingValue.textContent = state.padding;
     showRuleCheckbox.checked = state.showRule;
     showTaglineCheckbox.checked = state.showTagline;
     directionSelect.value = state.gradientDirection;
     bgOptions.forEach(function(button) {
       button.classList.toggle('active', button.dataset.bg === state.bgColor);
+    });
+    alignOptions.forEach(function(button) {
+      button.classList.toggle('active', button.dataset.align === state.align);
     });
     paletteContainer.querySelectorAll('.palette-swatch').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.palette === state.palette);
@@ -435,11 +499,67 @@
       render();
     });
 
-    fontSizeSlider.addEventListener('input', function(e) {
-      state.fontSize = parseInt(e.target.value);
-      fontSizeValue.textContent = state.fontSize;
+    logoSizeSlider.addEventListener('input', function(e) {
+      state.logoSize = parseInt(e.target.value);
+      logoSizeValue.textContent = state.logoSize;
       saveState();
       render();
+    });
+
+    lineHeightSlider.addEventListener('input', function(e) {
+      state.lineHeight = parseFloat(e.target.value);
+      lineHeightValue.textContent = state.lineHeight;
+      saveState();
+      render();
+    });
+
+    taglineSizeSlider.addEventListener('input', function(e) {
+      state.taglineSize = parseInt(e.target.value);
+      taglineSizeValue.textContent = state.taglineSize;
+      saveState();
+      render();
+    });
+
+    taglineFontSelect.addEventListener('change', function(e) {
+      state.taglineFont = e.target.value;
+      saveState();
+      render();
+    });
+
+    taglineSpacingSlider.addEventListener('input', function(e) {
+      state.taglineSpacing = parseInt(e.target.value);
+      taglineSpacingValue.textContent = state.taglineSpacing;
+      saveState();
+      render();
+    });
+
+    taglineCaseSelect.addEventListener('change', function(e) {
+      state.taglineTransform = e.target.value;
+      saveState();
+      render();
+    });
+
+    taglineSingleLineCheckbox.addEventListener('change', function(e) {
+      state.taglineSingleLine = e.target.checked;
+      saveState();
+      render();
+    });
+
+    paddingSlider.addEventListener('input', function(e) {
+      state.padding = parseInt(e.target.value);
+      paddingValue.textContent = state.padding;
+      saveState();
+      render();
+    });
+
+    alignOptions.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        alignOptions.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        state.align = btn.dataset.align;
+        saveState();
+        render();
+      });
     });
 
     showRuleCheckbox.addEventListener('change', function(e) {
@@ -483,6 +603,7 @@
 
     copyTextBtn.addEventListener('click', copyText);
     exportHtmlBtn.addEventListener('click', exportHtml);
+    exportPngBtn.addEventListener('click', exportPng);
   }
 
   // --- Render ---
@@ -492,12 +613,15 @@
     var hasText = grid.length > 0;
 
     asciiOutput.innerHTML = gridToHtml(grid, state.palette, state.gradientDirection, state.textColor);
+    asciiOutput.style.fontSize = state.logoSize + 'px';
+    asciiOutput.style.lineHeight = String(state.lineHeight);
 
     if (state.showRule && hasText) {
       var ruleColor = getPaletteRuleColor();
       ruleOutput.textContent = generateRule(grid);
       ruleOutput.style.display = 'block';
       ruleOutput.style.color = ruleColor;
+      ruleOutput.style.fontSize = state.logoSize + 'px';
     } else {
       ruleOutput.style.display = 'none';
     }
@@ -505,12 +629,19 @@
     if (state.showTagline && state.tagline) {
       taglineOutput.innerHTML = generateTaglineHtml(state.tagline, state.palette, state.gradientDirection, state.textColor);
       taglineOutput.style.display = 'block';
+      taglineOutput.style.fontSize = state.taglineSize + 'px';
+      taglineOutput.style.fontFamily = TAGLINE_FONT_MAP[state.taglineFont];
+      taglineOutput.style.letterSpacing = state.taglineSpacing + 'px';
+      taglineOutput.style.wordSpacing = '8px';
+      taglineOutput.style.textTransform = state.taglineTransform;
+      taglineOutput.style.whiteSpace = state.taglineSingleLine ? 'nowrap' : 'normal';
     } else {
       taglineOutput.style.display = 'none';
     }
 
     logoPreview.style.background = state.bgColor;
-    logoPreview.style.fontSize = state.fontSize + 'px';
+    logoPreview.style.padding = state.padding + 'px';
+    logoPreview.style.textAlign = state.align;
     saveState();
   }
 
@@ -562,7 +693,12 @@
       ? '<div class="tagline">' + generateTaglineHtml(state.tagline, state.palette, state.gradientDirection, state.textColor) + '</div>'
       : '';
 
-    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + state.bgColor + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: center; padding: 60px 40px; }\n  .ascii { font-size: ' + state.fontSize + 'px; line-height: 1.15; font-weight: 800; white-space: pre; margin-bottom: 8px; }\n  .rule { font-size: ' + state.fontSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-size: ' + state.fontSize + 'px; font-weight: 400; letter-spacing: 4px; white-space: pre; line-height: 1.6; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
+    var taglineFontImport = '';
+    if (state.taglineFont === 'mono' || state.taglineFont === 'sans') {
+      // Both JetBrains Mono and Space Grotesk already in the main import
+    }
+
+    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + state.bgColor + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.padding + 'px; }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: 8px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: 1.6; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
 
     var blob = new Blob([html], { type: 'text/html' });
     var link = document.createElement('a');
@@ -571,6 +707,170 @@
     link.click();
     URL.revokeObjectURL(link.href);
     showToast('HTML exported.');
+  }
+
+  // --- PNG Export ---
+
+  function exportPng() {
+    var grid = buildGrid(state.text);
+    var hasText = grid.length > 0;
+    var palette = GRADIENT_PALETTES[state.palette];
+    var colors = palette ? palette.colors : null;
+
+    var scale = 3;
+
+    document.fonts.ready.then(function() {
+      // Measure dimensions
+      var asciiFont = 'bold ' + (state.logoSize * scale) + 'px "JetBrains Mono", monospace';
+      var taglineFontCss = (state.taglineSize * scale) + 'px ' + TAGLINE_FONT_MAP[state.taglineFont];
+      var ruleFont = (state.logoSize * scale) + 'px "JetBrains Mono", monospace';
+
+      var measureCanvas = document.createElement('canvas');
+      var mctx = measureCanvas.getContext('2d');
+
+      // Measure character widths for ascii
+      mctx.font = asciiFont;
+      var asciiCharWidth = mctx.measureText('\u2588').width;
+      var asciiLineHeight = state.logoSize * scale * state.lineHeight;
+
+      // Measure tagline
+      mctx.font = taglineFontCss;
+      var taglineText = state.tagline;
+      if (state.taglineTransform === 'uppercase') taglineText = taglineText.toUpperCase();
+      else if (state.taglineTransform === 'lowercase') taglineText = taglineText.toLowerCase();
+
+      // Compute total tagline width including letter-spacing
+      var taglineChars = taglineText.split('');
+      var taglineCharWidths = [];
+      var taglineTotalWidth = 0;
+      taglineChars.forEach(function(c) {
+        var w = mctx.measureText(c).width;
+        taglineCharWidths.push(w);
+        taglineTotalWidth += w + state.taglineSpacing * scale;
+      });
+      // Remove trailing letter-spacing
+      if (taglineChars.length > 0) taglineTotalWidth -= state.taglineSpacing * scale;
+      // Account for word-spacing
+      taglineChars.forEach(function(c, i) {
+        if (c === ' ') {
+          taglineTotalWidth += 8 * scale; // extra word-spacing
+        }
+      });
+
+      var gridCols = hasText ? Math.max.apply(null, grid.map(function(r) { return r.length; })) : 0;
+      var asciiWidth = gridCols * asciiCharWidth;
+      var asciiHeight = hasText ? grid.length * asciiLineHeight : 0;
+
+      // Rule
+      mctx.font = ruleFont;
+      var ruleCharWidth = mctx.measureText('\u2504').width;
+      var ruleWidth = hasText ? grid[0].length * ruleCharWidth : 0;
+      var ruleHeight = state.showRule && hasText ? state.logoSize * scale * 1.6 : 0;
+
+      var taglineHeight = (state.showTagline && state.tagline) ? state.taglineSize * scale * 1.8 : 0;
+
+      var pad = state.padding * scale;
+      var contentWidth = Math.max(asciiWidth, ruleWidth, taglineTotalWidth);
+      var canvasWidth = contentWidth + pad * 2;
+      var canvasHeight = asciiHeight + ruleHeight + taglineHeight + pad * 2;
+
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(canvasWidth);
+      canvas.height = Math.ceil(canvasHeight);
+      var ctx = canvas.getContext('2d');
+
+      // Background
+      ctx.fillStyle = state.bgColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Alignment offset helper
+      function alignOffset(itemWidth) {
+        if (state.align === 'left') return pad;
+        if (state.align === 'right') return canvasWidth - pad - itemWidth;
+        return (canvasWidth - itemWidth) / 2;
+      }
+
+      // Draw ASCII grid
+      if (hasText) {
+        ctx.font = asciiFont;
+        ctx.textBaseline = 'top';
+        var totalRows = grid.length;
+        var totalCols = gridCols;
+        var asciiX = alignOffset(asciiWidth);
+
+        grid.forEach(function(row, ri) {
+          row.forEach(function(cell, ci) {
+            if (cell.char === ' ' && cell.channel === 0) return;
+            var color;
+            if (cell.channel === 0) {
+              color = 'transparent';
+              return;
+            }
+            if (colors) {
+              var t = getGradientPosition(ri, ci, totalRows, totalCols, state.gradientDirection);
+              var baseColor = getGradientColor(colors, t);
+              color = cell.channel === 1 ? baseColor : dimColor(baseColor, 0.4);
+            } else {
+              color = cell.channel === 1 ? state.textColor : dimColor(state.textColor, 0.4);
+            }
+            ctx.fillStyle = color;
+            ctx.fillText(cell.char, asciiX + ci * asciiCharWidth, pad + ri * asciiLineHeight);
+          });
+        });
+      }
+
+      var yOffset = pad + asciiHeight;
+
+      // Draw rule
+      if (state.showRule && hasText) {
+        ctx.font = ruleFont;
+        ctx.textBaseline = 'top';
+        ctx.globalAlpha = 0.4;
+        var ruleColor = getPaletteRuleColor();
+        ctx.fillStyle = ruleColor;
+        var ruleStr = generateRule(grid);
+        var ruleX = alignOffset(ruleWidth);
+        for (var ri = 0; ri < ruleStr.length; ri++) {
+          ctx.fillText(ruleStr[ri], ruleX + ri * ruleCharWidth, yOffset + ruleHeight * 0.15);
+        }
+        ctx.globalAlpha = 1.0;
+        yOffset += ruleHeight;
+      }
+
+      // Draw tagline
+      if (state.showTagline && state.tagline) {
+        ctx.font = taglineFontCss;
+        ctx.textBaseline = 'top';
+        var tagX = alignOffset(taglineTotalWidth);
+        var curX = tagX;
+
+        taglineChars.forEach(function(c, ci) {
+          if (c === ' ') {
+            curX += taglineCharWidths[ci] + state.taglineSpacing * scale + 8 * scale;
+            return;
+          }
+          var color;
+          if (colors) {
+            var t = taglineChars.length > 1 ? ci / (taglineChars.length - 1) : 0;
+            color = getGradientColor(colors, t);
+          } else {
+            color = state.textColor;
+          }
+          ctx.fillStyle = color;
+          ctx.fillText(c, curX, yOffset + taglineHeight * 0.15);
+          curX += taglineCharWidths[ci] + state.taglineSpacing * scale;
+        });
+      }
+
+      canvas.toBlob(function(blob) {
+        var link = document.createElement('a');
+        link.download = (state.text || 'logo') + '-logo.png';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast('PNG exported.');
+      }, 'image/png');
+    });
   }
 
   function showToast(message) {

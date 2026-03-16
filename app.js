@@ -69,6 +69,11 @@
 
   const TAGLINE_FONT_MAP = {
     mono: "'JetBrains Mono', 'Courier New', monospace",
+    firacode: "'Fira Code', 'JetBrains Mono', monospace",
+    spacemono: "'Space Mono', 'Courier New', monospace",
+    ibmplex: "'IBM Plex Mono', 'Courier New', monospace",
+    majormono: "'Major Mono Display', monospace",
+    atkinson: "'Atkinson Hyperlegible Mono', monospace",
     sans: "'Space Grotesk', -apple-system, sans-serif",
     serif: "Georgia, 'Times New Roman', serif"
   };

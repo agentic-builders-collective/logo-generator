@@ -115,7 +115,7 @@
 
   // State
   let state = {
-    text: 'abc',
+    text: 'ABC',
     tagline: 'agentic builders collective',
     font: 'block',
     blockStyle: 'solid',

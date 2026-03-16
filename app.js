@@ -54,7 +54,7 @@
     ice:     { name: 'Ice',     colors: ['#e0eafc', '#cfdef3'] },
     coral:   { name: 'Coral',   colors: ['#ff9a9e', '#fad0c4'] },
     aurora:  { name: 'Aurora',  colors: ['#a8ff78', '#78ffd6'] },
-    mono:    { name: 'Mono',    colors: null }
+    custom:  { name: 'Custom',  colors: null }
   };
 
   const FONT_OPTIONS = {
@@ -118,6 +118,9 @@
   const exportScaleSlider = document.getElementById('export-scale');
   const exportScaleValue = document.getElementById('export-scale-value');
   const transparentBgCheckbox = document.getElementById('transparent-bg');
+  const customColorsGroup = document.getElementById('custom-colors-group');
+  const customColor1Input = document.getElementById('custom-color-1');
+  const customColor2Input = document.getElementById('custom-color-2');
   const paletteContainer = document.getElementById('palette-options');
   const directionSelect = document.getElementById('gradient-direction');
 
@@ -143,7 +146,9 @@
     palette: 'sunset',
     gradientDirection: 'vertical',
     exportScale: 150,
-    transparentBg: false
+    transparentBg: false,
+    customColor1: '#ff6b6b',
+    customColor2: '#4ecdc4'
   };
 
   // --- Colour utilities ---
@@ -294,7 +299,7 @@
 
   function gridToHtml(grid, paletteKey, direction, textColor) {
     if (grid.length === 0) return '';
-    var palette = GRADIENT_PALETTES[paletteKey];
+    var palette = getResolvedPalette(paletteKey);
     var colors = palette ? palette.colors : null;
     var totalRows = grid.length;
     var totalCols = Math.max.apply(null, grid.map(function(r) { return r.length; }));
@@ -348,7 +353,7 @@
   }
 
   function generateTaglineHtml(tagline, paletteKey, direction, textColor) {
-    var palette = GRADIENT_PALETTES[paletteKey];
+    var palette = getResolvedPalette(paletteKey);
     var colors = palette ? palette.colors : null;
 
     if (!colors) {
@@ -366,7 +371,7 @@
   }
 
   function getPaletteRuleColor() {
-    var palette = GRADIENT_PALETTES[state.palette];
+    var palette = getResolvedPalette(state.palette);
     if (!palette || !palette.colors) return state.textColor;
     return getGradientColor(palette.colors, 0.5);
   }
@@ -416,7 +421,9 @@
         palette: saved.palette && GRADIENT_PALETTES[saved.palette] ? saved.palette : state.palette,
         gradientDirection: saved.gradientDirection || state.gradientDirection,
         exportScale: Number.isFinite(saved.exportScale) ? saved.exportScale : state.exportScale,
-        transparentBg: typeof saved.transparentBg === 'boolean' ? saved.transparentBg : state.transparentBg
+        transparentBg: typeof saved.transparentBg === 'boolean' ? saved.transparentBg : state.transparentBg,
+        customColor1: saved.customColor1 || state.customColor1,
+        customColor2: saved.customColor2 || state.customColor2
       };
     } catch (error) { /* ignore */ }
   }
@@ -425,20 +432,41 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
   }
 
+  function getCustomColors() {
+    return [state.customColor1, state.customColor2];
+  }
+
+  function getResolvedPalette(key) {
+    if (key === 'custom') return { name: 'Custom', colors: getCustomColors() };
+    return GRADIENT_PALETTES[key];
+  }
+
   function buildPaletteSwatches() {
     paletteContainer.innerHTML = '';
     for (var key in GRADIENT_PALETTES) {
-      var palette = GRADIENT_PALETTES[key];
       var btn = document.createElement('button');
       btn.className = 'palette-swatch';
       btn.dataset.palette = key;
-      btn.title = palette.name;
-      if (palette.colors) {
-        btn.style.background = 'linear-gradient(135deg, ' + palette.colors.join(', ') + ')';
+      if (key === 'custom') {
+        btn.title = 'Custom';
+        btn.classList.add('palette-swatch-custom');
+        btn.style.background = 'linear-gradient(135deg, ' + state.customColor1 + ', ' + state.customColor2 + ')';
+        btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 2a1.5 1.5 0 0 0-1.5 1.5v.7a5 5 0 0 0-1.3.5l-.5-.5a1.5 1.5 0 1 0-2.1 2.1l.5.5a5 5 0 0 0-.5 1.3h-.7a1.5 1.5 0 0 0 0 3h.7a5 5 0 0 0 .5 1.3l-.5.5a1.5 1.5 0 1 0 2.1 2.1l.5-.5a5 5 0 0 0 1.3.5v.7a1.5 1.5 0 0 0 3 0v-.7a5 5 0 0 0 1.3-.5l.5.5a1.5 1.5 0 0 0 2.1-2.1l-.5-.5a5 5 0 0 0 .5-1.3h.7a1.5 1.5 0 0 0 0-3h-.7a5 5 0 0 0-.5-1.3l.5-.5a1.5 1.5 0 0 0-2.1-2.1l-.5.5a5 5 0 0 0-1.3-.5v-.7A1.5 1.5 0 0 0 8 2ZM6 8a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z" fill="currentColor"/></svg>';
       } else {
-        btn.style.background = '#ffffff';
+        var palette = GRADIENT_PALETTES[key];
+        btn.title = palette.name;
+        if (palette.colors) {
+          btn.style.background = 'linear-gradient(135deg, ' + palette.colors.join(', ') + ')';
+        }
       }
       paletteContainer.appendChild(btn);
+    }
+  }
+
+  function updateCustomSwatch() {
+    var swatch = paletteContainer.querySelector('[data-palette="custom"]');
+    if (swatch) {
+      swatch.style.background = 'linear-gradient(135deg, ' + state.customColor1 + ', ' + state.customColor2 + ')';
     }
   }
 
@@ -476,7 +504,10 @@
     exportScaleSlider.value = state.exportScale;
     exportScaleValue.textContent = state.exportScale;
     transparentBgCheckbox.checked = state.transparentBg;
-    textColorGroup.style.display = state.palette === 'mono' ? '' : 'none';
+    customColor1Input.value = state.customColor1;
+    customColor2Input.value = state.customColor2;
+    customColorsGroup.style.display = state.palette === 'custom' ? '' : 'none';
+    textColorGroup.style.display = 'none';
     blockStyleGroup.style.display = FONT_OPTIONS[state.font].type === 'pixel' ? '' : 'none';
   }
 
@@ -605,13 +636,28 @@
       state.palette = swatch.dataset.palette;
       paletteContainer.querySelectorAll('.palette-swatch').forEach(function(b) { b.classList.remove('active'); });
       swatch.classList.add('active');
-      textColorGroup.style.display = state.palette === 'mono' ? '' : 'none';
+      customColorsGroup.style.display = state.palette === 'custom' ? '' : 'none';
+      textColorGroup.style.display = 'none';
       saveState();
       render();
     });
 
     directionSelect.addEventListener('change', function(e) {
       state.gradientDirection = e.target.value;
+      saveState();
+      render();
+    });
+
+    customColor1Input.addEventListener('input', function(e) {
+      state.customColor1 = e.target.value;
+      updateCustomSwatch();
+      saveState();
+      render();
+    });
+
+    customColor2Input.addEventListener('input', function(e) {
+      state.customColor2 = e.target.value;
+      updateCustomSwatch();
       saveState();
       render();
     });
@@ -740,7 +786,7 @@
   function exportPng() {
     var grid = buildGrid(state.text);
     var hasText = grid.length > 0;
-    var palette = GRADIENT_PALETTES[state.palette];
+    var palette = getResolvedPalette(state.palette);
     var colors = palette ? palette.colors : null;
 
     var scale = state.exportScale / 100 * 3;

@@ -181,6 +181,56 @@ main {
   padding-top: 0.5rem;
 }
 
+/* Custom palette swatch */
+.palette-swatch-custom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.palette-swatch-custom svg {
+  width: 55%;
+  height: 55%;
+  color: rgba(255, 255, 255, 0.85);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+/* Custom colour pickers */
+.custom-color-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.custom-color-row label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.custom-color-row input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+}
+
+.custom-color-row input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.custom-color-row input[type="color"]::-webkit-color-swatch {
+  border: 2px solid var(--border);
+  border-radius: 6px;
+}
+
 .control-group {
   display: flex;
   flex-direction: column;

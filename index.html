@@ -59,6 +59,12 @@
               <label>Colour Palette</label>
               <div class="palette-options" id="palette-options"></div>
             </div>
+            <div class="control-group custom-colors" id="custom-colors-group" style="display:none">
+              <div class="custom-color-row">
+                <label>Colour 1 <input type="color" id="custom-color-1" value="#ff6b6b"></label>
+                <label>Colour 2 <input type="color" id="custom-color-2" value="#4ecdc4"></label>
+              </div>
+            </div>
             <div class="control-group">
               <label for="gradient-direction">Gradient Direction</label>
               <select id="gradient-direction">
@@ -153,8 +159,7 @@
               </div>
             </div>
             <div class="control-group" id="text-color-group" style="display:none">
-              <label for="text-color">Text Colour</label>
-              <input type="color" id="text-color" value="#ffffff">
+              <input type="hidden" id="text-color" value="#ffffff">
             </div>
             <div class="control-group">
               <label>

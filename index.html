@@ -162,9 +162,26 @@
               <input type="hidden" id="text-color" value="#ffffff">
             </div>
             <div class="control-group">
-              <label>
-                <input type="checkbox" id="show-rule" checked> Show separator line
-              </label>
+              <div class="rule-row">
+                <label class="rule-check">
+                  <input type="checkbox" id="show-rule" checked> Separator
+                </label>
+                <select id="rule-style" class="rule-select">
+                  <option value="┄">┄┄┄</option>
+                  <option value="─">───</option>
+                  <option value="═">═══</option>
+                  <option value="━">━━━</option>
+                  <option value="-">---</option>
+                  <option value="=">=== </option>
+                  <option value="·">···</option>
+                  <option value="•">•••</option>
+                  <option value="~">~~~</option>
+                  <option value="custom">Custom</option>
+                </select>
+                <input type="text" id="rule-custom-char" class="rule-custom-input" value="─" maxlength="3" placeholder="─" style="display:none">
+              </div>
+              <div id="rule-style-group"></div>
+              <div id="rule-custom-group"></div>
             </div>
             <div class="control-group">
               <label>

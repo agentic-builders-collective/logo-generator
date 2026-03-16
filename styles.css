@@ -231,6 +231,52 @@ main {
   border-radius: 6px;
 }
 
+/* Separator row */
+.rule-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rule-check {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--text-primary) !important;
+  font-size: 0.8rem !important;
+}
+
+.rule-select {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.rule-custom-input {
+  width: 3.5rem;
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  text-align: center;
+  outline: none;
+}
+
+.rule-custom-input:focus,
+.rule-select:focus {
+  border-color: var(--accent);
+}
+
 .control-group {
   display: flex;
   flex-direction: column;

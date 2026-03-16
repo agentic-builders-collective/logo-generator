@@ -118,6 +118,10 @@
   const exportScaleSlider = document.getElementById('export-scale');
   const exportScaleValue = document.getElementById('export-scale-value');
   const transparentBgCheckbox = document.getElementById('transparent-bg');
+  const ruleStyleSelect = document.getElementById('rule-style');
+  const ruleStyleGroup = document.getElementById('rule-style-group');
+  const ruleCustomGroup = document.getElementById('rule-custom-group');
+  const ruleCustomCharInput = document.getElementById('rule-custom-char');
   const customColorsGroup = document.getElementById('custom-colors-group');
   const customColor1Input = document.getElementById('custom-color-1');
   const customColor2Input = document.getElementById('custom-color-2');
@@ -142,6 +146,8 @@
     padding: 60,
     align: 'center',
     showRule: true,
+    ruleStyle: '\u2504',
+    ruleCustomChar: '\u2500',
     showTagline: true,
     palette: 'sunset',
     gradientDirection: 'vertical',
@@ -327,10 +333,15 @@
 
   // --- Rule and tagline ---
 
+  function getRuleChar() {
+    if (state.ruleStyle === 'custom') return state.ruleCustomChar || '\u2500';
+    return state.ruleStyle || '\u2504';
+  }
+
   function generateRule(grid) {
     if (grid.length === 0) return '';
     var width = grid[0].length;
-    var ch = '\u2504';
+    var ch = getRuleChar();
     var rule = '';
     for (var i = 0; i < width; i++) rule += ch;
     return rule;
@@ -417,6 +428,8 @@
         padding: Number.isFinite(saved.padding) ? saved.padding : state.padding,
         align: ['left', 'center', 'right'].indexOf(saved.align) !== -1 ? saved.align : state.align,
         showRule: typeof saved.showRule === 'boolean' ? saved.showRule : state.showRule,
+        ruleStyle: saved.ruleStyle || state.ruleStyle,
+        ruleCustomChar: saved.ruleCustomChar || state.ruleCustomChar,
         showTagline: typeof saved.showTagline === 'boolean' ? saved.showTagline : state.showTagline,
         palette: saved.palette && GRADIENT_PALETTES[saved.palette] ? saved.palette : state.palette,
         gradientDirection: saved.gradientDirection || state.gradientDirection,
@@ -490,6 +503,13 @@
     paddingSlider.value = state.padding;
     paddingValue.textContent = state.padding;
     showRuleCheckbox.checked = state.showRule;
+    ruleStyleSelect.value = state.ruleStyle === 'custom' ? 'custom' : state.ruleStyle;
+    if (state.ruleStyle !== 'custom' && !ruleStyleSelect.querySelector('option[value="' + state.ruleStyle + '"]')) {
+      ruleStyleSelect.value = 'custom';
+    }
+    ruleCustomCharInput.value = state.ruleCustomChar;
+    ruleStyleSelect.style.display = state.showRule ? '' : 'none';
+    ruleCustomCharInput.style.display = (state.showRule && state.ruleStyle === 'custom') ? '' : 'none';
     showTaglineCheckbox.checked = state.showTagline;
     directionSelect.value = state.gradientDirection;
     bgOptions.forEach(function(button) {
@@ -610,6 +630,21 @@
 
     showRuleCheckbox.addEventListener('change', function(e) {
       state.showRule = e.target.checked;
+      ruleStyleSelect.style.display = state.showRule ? '' : 'none';
+      ruleCustomCharInput.style.display = (state.showRule && state.ruleStyle === 'custom') ? '' : 'none';
+      saveState();
+      render();
+    });
+
+    ruleStyleSelect.addEventListener('change', function(e) {
+      state.ruleStyle = e.target.value;
+      ruleCustomCharInput.style.display = state.ruleStyle === 'custom' ? '' : 'none';
+      saveState();
+      render();
+    });
+
+    ruleCustomCharInput.addEventListener('input', function(e) {
+      state.ruleCustomChar = e.target.value || '\u2500';
       saveState();
       render();
     });

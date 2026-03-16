@@ -10,7 +10,7 @@
   <div class="app">
     <header>
       <h1>ASCII Logo Generator</h1>
-      <p>Create block-style ASCII art logos</p>
+      <p>Create block-style ASCII art logos with gradient colours</p>
     </header>
 
     <main>
@@ -26,7 +26,7 @@
 
       <div class="controls-section">
         <div class="control-group">
-          <label for="logo-text">Text (a-z)</label>
+          <label for="logo-text">Text</label>
           <input type="text" id="logo-text" value="abc" maxlength="12" placeholder="abc">
         </div>
 
@@ -36,18 +36,45 @@
         </div>
 
         <div class="control-group">
-          <label for="block-style">Block Style</label>
-          <select id="block-style">
-            <option value="solid">Solid (███)</option>
-            <option value="shade">Shade (▓▓▓)</option>
-            <option value="medium">Medium (▒▒▒)</option>
-            <option value="light">Light (░░░)</option>
-            <option value="outline">Outline (█░█)</option>
+          <label for="font-select">Font</label>
+          <select id="font-select">
+            <option value="block">Block (bold shadows)</option>
+            <option value="shade">Shade (░ fill)</option>
+            <option value="huge">Huge (maximum impact)</option>
+            <option value="slick">Slick (rounded)</option>
+            <option value="chrome">Chrome (compact)</option>
+            <option value="tiny">Tiny (half-blocks)</option>
+            <option value="pixel">Pixel (lowercase)</option>
           </select>
         </div>
 
         <div class="control-group">
-          <label for="text-color">Text Color</label>
+          <label>Colour Palette</label>
+          <div class="palette-options" id="palette-options"></div>
+        </div>
+
+        <div class="control-group">
+          <label for="gradient-direction">Gradient Direction</label>
+          <select id="gradient-direction">
+            <option value="vertical">Vertical</option>
+            <option value="horizontal">Horizontal</option>
+            <option value="diagonal">Diagonal</option>
+          </select>
+        </div>
+
+        <div class="control-group" id="block-style-group" style="display:none">
+          <label for="block-style">Block Style</label>
+          <select id="block-style">
+            <option value="solid">Solid</option>
+            <option value="shade">Shade</option>
+            <option value="medium">Medium</option>
+            <option value="light">Light</option>
+            <option value="outline">Outline</option>
+          </select>
+        </div>
+
+        <div class="control-group" id="text-color-group" style="display:none">
+          <label for="text-color">Text Colour</label>
           <input type="color" id="text-color" value="#ffffff">
         </div>
 
@@ -63,7 +90,7 @@
 
         <div class="control-group">
           <label for="font-size">Font Size: <span id="font-size-value">14</span>px</label>
-          <input type="range" id="font-size" min="8" max="24" value="14">
+          <input type="range" id="font-size" min="6" max="24" value="14">
         </div>
 
         <div class="control-group">
@@ -86,10 +113,11 @@
     </main>
 
     <footer>
-      <p>Vanilla JS • Easy GitHub Pages deployment</p>
+      <p>Vanilla JS &bull; Fonts by <a href="https://github.com/dominikwilkowski/cfonts" style="color:var(--accent)">cfonts</a></p>
     </footer>
   </div>
 
+  <script src="fonts.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

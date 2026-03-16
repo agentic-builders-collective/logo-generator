@@ -198,6 +198,32 @@ main {
   color: var(--text-primary);
 }
 
+/* Palette swatches */
+.palette-options {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.palette-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.palette-swatch:hover {
+  border-color: var(--accent-soft);
+  transform: scale(1.1);
+}
+
+.palette-swatch.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(255, 140, 0, 0.4);
+}
+
 .bg-options {
   display: flex;
   gap: 0.5rem;

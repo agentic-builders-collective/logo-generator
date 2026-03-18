@@ -129,6 +129,7 @@
   const exportScaleSlider = document.getElementById('export-scale');
   const exportScaleValue = document.getElementById('export-scale-value');
   const transparentBgCheckbox = document.getElementById('transparent-bg');
+  const exportLogoOnlyCheckbox = document.getElementById('export-logo-only');
   const ruleStyleSelect = document.getElementById('rule-style');
   const ruleLengthSlider = document.getElementById('rule-length');
   const ruleLengthValue = document.getElementById('rule-length-value');
@@ -174,6 +175,7 @@
       gradientDirection: 'vertical',
       exportScale: 150,
       transparentBg: false,
+      exportLogoOnly: false,
       customColor1: '#ff6b6b',
       customColor2: '#4ecdc4',
       italicMode: 'none',
@@ -473,6 +475,7 @@
       gradientDirection: normaliseChoice(source.gradientDirection, GRADIENT_DIRECTION_VALUES, defaults.gradientDirection),
       exportScale: clampNumber(source.exportScale, 100, 300, defaults.exportScale),
       transparentBg: typeof source.transparentBg === 'boolean' ? source.transparentBg : defaults.transparentBg,
+      exportLogoOnly: typeof source.exportLogoOnly === 'boolean' ? source.exportLogoOnly : defaults.exportLogoOnly,
       customColor1: isHexColor(source.customColor1) ? source.customColor1 : defaults.customColor1,
       customColor2: isHexColor(source.customColor2) ? source.customColor2 : defaults.customColor2,
       italicMode: italicMode,
@@ -504,6 +507,14 @@
     buildPaletteSwatches();
     syncControls();
     render();
+  }
+
+  function shouldExportRule(hasText) {
+    return !state.exportLogoOnly && state.showRule && hasText;
+  }
+
+  function shouldExportTagline() {
+    return !state.exportLogoOnly && state.showTagline && !!state.tagline;
   }
 
   function getRuleRepeatCount(grid) {
@@ -670,6 +681,7 @@
     exportScaleSlider.value = state.exportScale;
     exportScaleValue.textContent = state.exportScale;
     transparentBgCheckbox.checked = state.transparentBg;
+    exportLogoOnlyCheckbox.checked = state.exportLogoOnly;
     italicModeSelect.value = state.italicMode;
     italicAmountGroup.style.display = state.italicMode !== 'none' ? '' : 'none';
     if (state.italicMode === 'skew') {
@@ -875,6 +887,11 @@
       saveState();
     });
 
+    exportLogoOnlyCheckbox.addEventListener('change', function(e) {
+      state.exportLogoOnly = e.target.checked;
+      saveState();
+    });
+
     italicModeSelect.addEventListener('change', function(e) {
       state.italicMode = e.target.value;
       state.italicAmount = 0;
@@ -948,8 +965,8 @@
     var grid = buildGrid(state.text);
     var hasText = grid.length > 0;
     var ascii = gridToPlainText(grid);
-    var rule = state.showRule && hasText ? '\n' + generateRule(grid) : '';
-    var tagline = state.showTagline && state.tagline ? '\n' + generateTaglinePlain(state.tagline) : '';
+    var rule = shouldExportRule(hasText) ? '\n' + generateRule(grid) : '';
+    var tagline = shouldExportTagline() ? '\n' + generateTaglinePlain(state.tagline) : '';
     var fullText = ascii + rule + tagline;
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1019,10 +1036,10 @@
     var skewDeg = state.italicMode === 'skew' ? state.italicAmount : 0;
     var asciiHtml = gridToHtml(grid, state.palette, state.gradientDirection, state.textColor);
     var ruleColor = getPaletteRuleColor();
-    var ruleHtml = state.showRule && hasText
+    var ruleHtml = shouldExportRule(hasText)
       ? '<div class="rule" style="color:' + ruleColor + '">' + generateRule(grid) + '</div>'
       : '';
-    var taglineHtml = state.showTagline && state.tagline
+    var taglineHtml = shouldExportTagline()
       ? '<div class="tagline">' + generateTaglineHtml(state.tagline, state.palette, state.gradientDirection, state.textColor) + '</div>'
       : '';
 
@@ -1047,6 +1064,8 @@
   function exportPng() {
     var grid = buildGrid(state.text);
     var hasText = grid.length > 0;
+    var exportRule = shouldExportRule(hasText);
+    var exportTagline = shouldExportTagline();
     var palette = getResolvedPalette(state.palette);
     var colors = palette ? palette.colors : null;
 
@@ -1073,7 +1092,7 @@
       else if (state.taglineTransform === 'lowercase') taglineText = taglineText.toLowerCase();
 
       // Compute total tagline width including letter-spacing
-      var taglineChars = taglineText.split('');
+      var taglineChars = exportTagline ? taglineText.split('') : [];
       var taglineCharWidths = [];
       var taglineTotalWidth = 0;
       taglineChars.forEach(function(c) {
@@ -1096,11 +1115,11 @@
 
       // Rule
       mctx.font = ruleFont;
-      var ruleStr = state.showRule && hasText ? generateRule(grid) : '';
+      var ruleStr = exportRule ? generateRule(grid) : '';
       var ruleWidth = ruleStr ? mctx.measureText(ruleStr).width : 0;
-      var ruleHeight = state.showRule && hasText ? state.logoSize * scale * 1.6 : 0;
+      var ruleHeight = exportRule ? state.logoSize * scale * 1.6 : 0;
 
-      var taglineHeight = (state.showTagline && state.tagline) ? state.taglineSize * scale * 1.8 : 0;
+      var taglineHeight = exportTagline ? state.taglineSize * scale * 1.8 : 0;
 
       var pad = state.padding * scale;
       // Extra width needed when skew shears the ASCII block horizontally
@@ -1175,7 +1194,7 @@
       var yOffset = pad + asciiHeight;
 
       // Draw rule
-      if (state.showRule && hasText) {
+      if (exportRule) {
         ctx.font = ruleFont;
         ctx.textBaseline = 'top';
         ctx.globalAlpha = 0.4;
@@ -1188,7 +1207,7 @@
       }
 
       // Draw tagline
-      if (state.showTagline && state.tagline) {
+      if (exportTagline) {
         ctx.font = taglineFontCss;
         ctx.textBaseline = 'top';
         var tagX = alignOffset(taglineTotalWidth);

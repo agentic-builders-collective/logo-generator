@@ -31,11 +31,11 @@
           <div class="section-body">
             <div class="control-group">
               <label for="logo-text">Text</label>
-              <input type="text" id="logo-text" value="ABC" maxlength="12" placeholder="ABC">
+              <input type="text" id="logo-text" maxlength="12" placeholder="ABC">
             </div>
             <div class="control-group">
               <label for="tagline-text">Title</label>
-              <input type="text" id="tagline-text" value="agentic builders collective" maxlength="120" placeholder="your tagline here">
+              <input type="text" id="tagline-text" maxlength="120" placeholder="your tagline here">
             </div>
           </div>
         </details>
@@ -82,8 +82,8 @@
               </select>
             </div>
             <div class="control-group" id="italic-amount-group" style="display:none">
-              <label for="italic-slider"><span id="italic-label">Amount</span>: <span id="italic-value">0</span><span id="italic-unit"></span></label>
-              <input type="range" id="italic-slider" min="-20" max="20" step="1" value="0">
+              <label for="italic-slider"><span id="italic-label"></span>: <span id="italic-value"></span><span id="italic-unit"></span></label>
+              <input type="range" id="italic-slider" min="-20" max="20" step="1">
             </div>
             <div class="control-group" id="block-style-group" style="display:none">
               <label for="block-style">Block Style</label>
@@ -102,19 +102,19 @@
           <summary class="section-header">Layout</summary>
           <div class="section-body">
             <div class="control-group">
-              <label for="logo-size">Logo Size: <span id="logo-size-value">21</span>px</label>
-              <input type="range" id="logo-size" min="6" max="48" value="21">
+              <label for="logo-size">Logo Size: <span id="logo-size-value"></span>px</label>
+              <input type="range" id="logo-size" min="6" max="48">
             </div>
             <div class="control-group">
-              <label for="line-height">Line Height: <span id="line-height-value">1.15</span></label>
-              <input type="range" id="line-height" min="0.8" max="1.8" step="0.05" value="1.15">
+              <label for="line-height">Line Height: <span id="line-height-value"></span></label>
+              <input type="range" id="line-height" min="0.8" max="1.8" step="0.05">
             </div>
             <div class="control-group">
               <label>Alignment</label>
               <div class="align-options">
-                <button class="align-option" data-align="left">Left</button>
-                <button class="align-option active" data-align="center">Centre</button>
-                <button class="align-option" data-align="right">Right</button>
+                <button type="button" class="align-option" data-align="left">Left</button>
+                <button type="button" class="align-option" data-align="center">Centre</button>
+                <button type="button" class="align-option" data-align="right">Right</button>
               </div>
             </div>
           </div>
@@ -124,8 +124,8 @@
           <summary class="section-header">Title</summary>
           <div class="section-body">
             <div class="control-group">
-              <label for="tagline-size">Size: <span id="tagline-size-value">16</span>px</label>
-              <input type="range" id="tagline-size" min="8" max="36" value="16">
+              <label for="tagline-size">Size: <span id="tagline-size-value"></span>px</label>
+              <input type="range" id="tagline-size" min="8" max="36">
             </div>
             <div class="control-group">
               <label for="tagline-font">Font</label>
@@ -141,8 +141,8 @@
               </select>
             </div>
             <div class="control-group">
-              <label for="tagline-spacing">Spacing: <span id="tagline-spacing-value">4</span>px</label>
-              <input type="range" id="tagline-spacing" min="0" max="20" value="4">
+              <label for="tagline-spacing">Spacing: <span id="tagline-spacing-value"></span>px</label>
+              <input type="range" id="tagline-spacing" min="0" max="20">
             </div>
             <div class="control-group">
               <label for="tagline-case">Case</label>
@@ -154,12 +154,12 @@
             </div>
             <div class="control-group">
               <label>
-                <input type="checkbox" id="tagline-single-line" checked> Single line
+                <input type="checkbox" id="tagline-single-line"> Single line
               </label>
             </div>
             <div class="control-group">
               <label>
-                <input type="checkbox" id="show-tagline" checked> Show title
+                <input type="checkbox" id="show-tagline"> Show title
               </label>
             </div>
           </div>
@@ -171,28 +171,28 @@
             <div class="control-group">
               <label>Background</label>
               <div class="align-options bg-mode-options">
-                <button class="align-option bg-mode-option active" data-bg-mode="solid">Solid</button>
-                <button class="align-option bg-mode-option" data-bg-mode="gradient">Gradient</button>
+                <button type="button" class="align-option bg-mode-option" data-bg-mode="solid">Solid</button>
+                <button type="button" class="align-option bg-mode-option" data-bg-mode="gradient">Gradient</button>
               </div>
             </div>
             <div class="control-group" id="bg-solid-group">
               <div class="bg-options">
-                <button class="bg-option active" data-bg="#000000">Black</button>
-                <button class="bg-option" data-bg="#0d1117">Dark</button>
-                <button class="bg-option" data-bg="#1a1a2e">Navy</button>
-                <button class="bg-option" data-bg="#ffffff">White</button>
-                <button class="bg-option bg-option-custom" data-bg="custom" aria-label="Custom background" title="Custom background"></button>
+                <button type="button" class="bg-option" data-bg="#000000">Black</button>
+                <button type="button" class="bg-option" data-bg="#0d1117">Dark</button>
+                <button type="button" class="bg-option" data-bg="#1a1a2e">Navy</button>
+                <button type="button" class="bg-option" data-bg="#ffffff">White</button>
+                <button type="button" class="bg-option bg-option-custom" data-bg="custom" aria-label="Custom background" title="Custom background"></button>
               </div>
             </div>
             <div class="control-group custom-bg-group" id="custom-bg-group" style="display:none">
               <div class="custom-color-row">
-                <label>Custom background <input type="color" id="custom-bg-color" value="#000000"></label>
+                <label>Custom background <input type="color" id="custom-bg-color"></label>
               </div>
             </div>
             <div class="control-group" id="bg-gradient-group" style="display:none">
               <div class="custom-color-row">
-                <label>Colour 1 <input type="color" id="bg-gradient-color-1" value="#09090f"></label>
-                <label>Colour 2 <input type="color" id="bg-gradient-color-2" value="#1b1f38"></label>
+                <label>Colour 1 <input type="color" id="bg-gradient-color-1"></label>
+                <label>Colour 2 <input type="color" id="bg-gradient-color-2"></label>
               </div>
             </div>
             <div class="control-group" id="bg-gradient-direction-group" style="display:none">
@@ -203,13 +203,10 @@
                 <option value="diagonal">Diagonal</option>
               </select>
             </div>
-            <div class="control-group" id="text-color-group" style="display:none">
-              <input type="hidden" id="text-color" value="#ffffff">
-            </div>
             <div class="control-group">
               <div class="rule-row">
                 <label class="rule-check">
-                  <input type="checkbox" id="show-rule" checked> Separator
+                  <input type="checkbox" id="show-rule"> Separator
                 </label>
                 <select id="rule-style" class="rule-select">
                   <option value="┄">┄┄┄</option>
@@ -223,14 +220,12 @@
                   <option value="~">~~~</option>
                   <option value="custom">Custom</option>
                 </select>
-                <input type="text" id="rule-custom-char" class="rule-custom-input" value="─" maxlength="3" placeholder="─" style="display:none">
+                <input type="text" id="rule-custom-char" class="rule-custom-input" maxlength="3" placeholder="─" style="display:none">
               </div>
               <div class="control-group rule-length-group" id="rule-length-group">
-                <label for="rule-length">Length: <span id="rule-length-value">100</span>%</label>
-                <input type="range" id="rule-length" min="25" max="200" step="5" value="100">
+                <label for="rule-length">Length: <span id="rule-length-value"></span>%</label>
+                <input type="range" id="rule-length" min="25" max="200" step="5">
               </div>
-              <div id="rule-style-group"></div>
-              <div id="rule-custom-group"></div>
             </div>
           </div>
         </details>
@@ -239,12 +234,12 @@
           <summary class="section-header">Export</summary>
           <div class="section-body">
             <div class="control-group">
-              <label for="export-scale">Export Scale: <span id="export-scale-value">150</span>%</label>
-              <input type="range" id="export-scale" min="100" max="300" step="25" value="150">
+              <label for="export-scale">Export Scale: <span id="export-scale-value"></span>%</label>
+              <input type="range" id="export-scale" min="100" max="300" step="25">
             </div>
             <div class="control-group">
-              <label for="export-padding">Export Padding: <span id="export-padding-value">72</span>px</label>
-              <input type="range" id="export-padding" min="0" max="200" step="4" value="72">
+              <label for="export-padding">Export Padding: <span id="export-padding-value"></span>px</label>
+              <input type="range" id="export-padding" min="0" max="200" step="4">
             </div>
             <div class="control-group">
               <label>
@@ -258,11 +253,11 @@
             </div>
             <input type="file" id="settings-import-input" accept="application/json,.json" hidden>
             <div class="export-buttons">
-              <button id="export-settings" class="btn btn-secondary">Export JSON</button>
-              <button id="import-settings" class="btn btn-secondary">Import JSON</button>
-              <button id="export-html" class="btn btn-primary">Export HTML</button>
-              <button id="export-png" class="btn btn-primary">Export PNG</button>
-              <button id="copy-text" class="btn btn-secondary btn-full">Copy Text</button>
+              <button type="button" id="export-settings" class="btn btn-secondary">Export JSON</button>
+              <button type="button" id="import-settings" class="btn btn-secondary">Import JSON</button>
+              <button type="button" id="export-html" class="btn btn-primary">Export HTML</button>
+              <button type="button" id="export-png" class="btn btn-primary">Export PNG</button>
+              <button type="button" id="copy-text" class="btn btn-secondary btn-full">Copy Text</button>
             </div>
           </div>
         </details>

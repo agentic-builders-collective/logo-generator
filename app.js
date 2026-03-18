@@ -83,6 +83,8 @@
   const MIN_RULE_LENGTH_PERCENT = 25;
   const MAX_RULE_LENGTH_PERCENT = 200;
   const SETTINGS_EXPORT_VERSION = 1;
+  const TAGLINE_WORD_SPACING = 8;
+  const TAGLINE_LINE_HEIGHT = 1.6;
   const ALIGN_VALUES = ['left', 'center', 'right'];
   const TAGLINE_TRANSFORM_VALUES = ['none', 'uppercase', 'lowercase'];
   const GRADIENT_DIRECTION_VALUES = ['vertical', 'horizontal', 'diagonal'];
@@ -106,8 +108,6 @@
   const fontSelect = document.getElementById('font-select');
   const blockStyleSelect = document.getElementById('block-style');
   const blockStyleGroup = document.getElementById('block-style-group');
-  const textColorInput = document.getElementById('text-color');
-  const textColorGroup = document.getElementById('text-color-group');
   const logoSizeSlider = document.getElementById('logo-size');
   const logoSizeValue = document.getElementById('logo-size-value');
   const lineHeightSlider = document.getElementById('line-height');
@@ -149,8 +149,6 @@
   const ruleLengthSlider = document.getElementById('rule-length');
   const ruleLengthValue = document.getElementById('rule-length-value');
   const ruleLengthGroup = document.getElementById('rule-length-group');
-  const ruleStyleGroup = document.getElementById('rule-style-group');
-  const ruleCustomGroup = document.getElementById('rule-custom-group');
   const ruleCustomCharInput = document.getElementById('rule-custom-char');
   const customColorsGroup = document.getElementById('custom-colors-group');
   const customColor1Input = document.getElementById('custom-color-1');
@@ -185,7 +183,6 @@
       taglineTransform: 'none',
       taglineSingleLine: true,
       lineHeight: 1.25,
-      padding: 72,
       align: 'center',
       showRule: true,
       ruleStyle: '\u2504',
@@ -233,6 +230,24 @@
   function dimColor(hex, factor) {
     const [r, g, b] = hexToRgb(hex);
     return rgbToHex(Math.round(r * factor), Math.round(g * factor), Math.round(b * factor));
+  }
+
+  function getExportGoogleFontsUrl() {
+    var families = ['family=JetBrains+Mono:wght@400;700;800'];
+    var taglineImports = {
+      mono: 'family=JetBrains+Mono:wght@400;700;800',
+      firacode: 'family=Fira+Code:wght@400;600;700',
+      spacemono: 'family=Space+Mono:wght@400;700',
+      ibmplex: 'family=IBM+Plex+Mono:wght@400;500;600;700',
+      majormono: 'family=Major+Mono+Display',
+      atkinson: 'family=Atkinson+Hyperlegible+Mono:wght@400;700',
+      sans: 'family=Space+Grotesk:wght@500;700'
+    };
+    var taglineFamily = taglineImports[state.taglineFont];
+    if (taglineFamily && families.indexOf(taglineFamily) === -1) {
+      families.push(taglineFamily);
+    }
+    return 'https://fonts.googleapis.com/css2?' + families.join('&') + '&display=swap';
   }
 
   function getSettingsIconSvg() {
@@ -480,6 +495,67 @@
     return typeof value === 'string' ? value.slice(0, maxLength) : fallback;
   }
 
+  function getTaglineText(tagline) {
+    var text = tagline;
+    if (state.taglineTransform === 'uppercase') return text.toUpperCase();
+    if (state.taglineTransform === 'lowercase') return text.toLowerCase();
+    return text;
+  }
+
+  function measureTaglineTextWidth(ctx, text, letterSpacing, wordSpacing) {
+    var totalWidth = 0;
+    for (var i = 0; i < text.length; i++) {
+      var char = text[i];
+      totalWidth += ctx.measureText(char).width;
+      if (i < text.length - 1) {
+        totalWidth += letterSpacing;
+      }
+      if (char === ' ') {
+        totalWidth += wordSpacing;
+      }
+    }
+    return totalWidth;
+  }
+
+  function wrapTaglineText(ctx, text, maxWidth, letterSpacing, wordSpacing) {
+    if (!text) return [];
+    if (state.taglineSingleLine || !Number.isFinite(maxWidth) || maxWidth <= 0) {
+      return [text];
+    }
+
+    var words = text.trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) {
+      return [''];
+    }
+
+    var lines = [];
+    var currentLine = words[0];
+
+    for (var i = 1; i < words.length; i++) {
+      var candidate = currentLine + ' ' + words[i];
+      if (measureTaglineTextWidth(ctx, candidate, letterSpacing, wordSpacing) <= maxWidth) {
+        currentLine = candidate;
+      } else {
+        lines.push(currentLine);
+        currentLine = words[i];
+      }
+    }
+
+    lines.push(currentLine);
+    return lines;
+  }
+
+  function getTaglineLineLayout(ctx, text, letterSpacing, wordSpacing) {
+    var chars = text.split('');
+    return {
+      chars: chars,
+      width: measureTaglineTextWidth(ctx, text, letterSpacing, wordSpacing),
+      charWidths: chars.map(function(char) {
+        return ctx.measureText(char).width;
+      })
+    };
+  }
+
   function normaliseState(saved) {
     var defaults = getDefaultState();
     var source = saved && typeof saved === 'object' ? saved : {};
@@ -538,7 +614,6 @@
       taglineTransform: normaliseChoice(source.taglineTransform, TAGLINE_TRANSFORM_VALUES, defaults.taglineTransform),
       taglineSingleLine: typeof source.taglineSingleLine === 'boolean' ? source.taglineSingleLine : defaults.taglineSingleLine,
       lineHeight: clampNumber(source.lineHeight, 0.8, 1.8, defaults.lineHeight),
-      padding: clampNumber(source.padding, 20, 120, defaults.padding),
       align: normaliseChoice(source.align, ALIGN_VALUES, defaults.align),
       showRule: typeof source.showRule === 'boolean' ? source.showRule : defaults.showRule,
       ruleStyle: normaliseChoice(rawRuleStyle, RULE_STYLE_VALUES, defaults.ruleStyle),
@@ -580,8 +655,7 @@
   function applyImportedState(nextState) {
     state = normaliseState(nextState);
     buildPaletteSwatches();
-    syncControls();
-    render();
+    commitState();
   }
 
   function shouldExportRule(hasText) {
@@ -610,10 +684,7 @@
   function generateTaglinePlain(tagline) {
     // Approximate the CSS letter-spacing visually in plain text
     var spacing = state.taglineSpacing;
-    var transform = state.taglineTransform;
-    var text = tagline;
-    if (transform === 'uppercase') text = text.toUpperCase();
-    else if (transform === 'lowercase') text = text.toLowerCase();
+    var text = getTaglineText(tagline);
 
     if (spacing >= 2) {
       return text.split('').map(function(c) {
@@ -677,6 +748,14 @@
 
   function saveState() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  }
+
+  function commitState(shouldRender) {
+    syncControls();
+    saveState();
+    if (shouldRender !== false) {
+      render();
+    }
   }
 
   function getCustomColors() {
@@ -769,7 +848,6 @@
     taglineInput.value = state.tagline;
     fontSelect.value = state.font;
     blockStyleSelect.value = state.blockStyle;
-    textColorInput.value = state.textColor;
     logoSizeSlider.value = state.logoSize;
     logoSizeValue.textContent = state.logoSize;
     lineHeightSlider.value = state.lineHeight;
@@ -813,6 +891,7 @@
     alignOptions.forEach(function(button) {
       button.classList.toggle('active', button.dataset.align === state.align);
     });
+    updateCustomSwatch();
     paletteContainer.querySelectorAll('.palette-swatch').forEach(function(btn) {
       btn.classList.toggle('active', btn.dataset.palette === state.palette);
     });
@@ -838,153 +917,106 @@
     customColor1Input.value = state.customColor1;
     customColor2Input.value = state.customColor2;
     customColorsGroup.style.display = state.palette === 'custom' ? '' : 'none';
-    textColorGroup.style.display = 'none';
     blockStyleGroup.style.display = FONT_OPTIONS[state.font].type === 'pixel' ? '' : 'none';
   }
 
   function setupEventListeners() {
     textInput.addEventListener('input', function(e) {
       state.text = e.target.value.slice(0, MAX_TEXT_LENGTH);
-      textInput.value = state.text;
-      saveState();
-      render();
+      commitState();
     });
 
     taglineInput.addEventListener('input', function(e) {
       state.tagline = e.target.value.slice(0, MAX_TAGLINE_LENGTH);
-      taglineInput.value = state.tagline;
-      saveState();
-      render();
+      commitState();
     });
 
     fontSelect.addEventListener('change', function(e) {
       state.font = e.target.value;
-      blockStyleGroup.style.display = FONT_OPTIONS[state.font].type === 'pixel' ? '' : 'none';
-      saveState();
-      render();
+      commitState();
     });
 
     blockStyleSelect.addEventListener('change', function(e) {
       state.blockStyle = e.target.value;
-      saveState();
-      render();
-    });
-
-    textColorInput.addEventListener('input', function(e) {
-      state.textColor = e.target.value;
-      saveState();
-      render();
+      commitState();
     });
 
     logoSizeSlider.addEventListener('input', function(e) {
-      state.logoSize = parseInt(e.target.value);
-      logoSizeValue.textContent = state.logoSize;
-      saveState();
-      render();
+      state.logoSize = parseInt(e.target.value, 10);
+      commitState();
     });
 
     lineHeightSlider.addEventListener('input', function(e) {
       state.lineHeight = parseFloat(e.target.value);
-      lineHeightValue.textContent = state.lineHeight;
-      saveState();
-      render();
+      commitState();
     });
 
     taglineSizeSlider.addEventListener('input', function(e) {
-      state.taglineSize = parseInt(e.target.value);
-      taglineSizeValue.textContent = state.taglineSize;
-      saveState();
-      render();
+      state.taglineSize = parseInt(e.target.value, 10);
+      commitState();
     });
 
     taglineFontSelect.addEventListener('change', function(e) {
       state.taglineFont = e.target.value;
-      saveState();
-      render();
+      commitState();
     });
 
     taglineSpacingSlider.addEventListener('input', function(e) {
-      state.taglineSpacing = parseInt(e.target.value);
-      taglineSpacingValue.textContent = state.taglineSpacing;
-      saveState();
-      render();
+      state.taglineSpacing = parseInt(e.target.value, 10);
+      commitState();
     });
 
     taglineCaseSelect.addEventListener('change', function(e) {
       state.taglineTransform = e.target.value;
-      saveState();
-      render();
+      commitState();
     });
 
     taglineSingleLineCheckbox.addEventListener('change', function(e) {
       state.taglineSingleLine = e.target.checked;
-      saveState();
-      render();
+      commitState();
     });
 
     alignOptions.forEach(function(btn) {
       btn.addEventListener('click', function() {
-        alignOptions.forEach(function(b) { b.classList.remove('active'); });
-        btn.classList.add('active');
         state.align = btn.dataset.align;
-        saveState();
-        render();
+        commitState();
       });
     });
 
     showRuleCheckbox.addEventListener('change', function(e) {
       state.showRule = e.target.checked;
-      ruleLengthGroup.style.display = state.showRule ? '' : 'none';
-      ruleStyleSelect.style.display = state.showRule ? '' : 'none';
-      ruleCustomCharInput.style.display = (state.showRule && state.ruleStyle === 'custom') ? '' : 'none';
-      saveState();
-      render();
+      commitState();
     });
 
     ruleStyleSelect.addEventListener('change', function(e) {
       state.ruleStyle = e.target.value;
-      ruleCustomCharInput.style.display = state.ruleStyle === 'custom' ? '' : 'none';
-      saveState();
-      render();
+      commitState();
     });
 
     ruleLengthSlider.addEventListener('input', function(e) {
       state.ruleLengthPercent = clampRuleLengthPercent(parseInt(e.target.value, 10));
-      ruleLengthValue.textContent = state.ruleLengthPercent;
-      saveState();
-      render();
+      commitState();
     });
 
     ruleCustomCharInput.addEventListener('input', function(e) {
       state.ruleCustomChar = e.target.value || '\u2500';
-      saveState();
-      render();
+      commitState();
     });
 
     showTaglineCheckbox.addEventListener('change', function(e) {
       state.showTagline = e.target.checked;
-      saveState();
-      render();
+      commitState();
     });
 
     bgModeOptions.forEach(function(btn) {
       btn.addEventListener('click', function() {
-        bgModeOptions.forEach(function(button) { button.classList.remove('active'); });
-        btn.classList.add('active');
         state.bgMode = btn.dataset.bgMode;
-        bgSolidGroup.style.display = state.bgMode === 'solid' ? '' : 'none';
-        customBgGroup.style.display = (state.bgMode === 'solid' && state.bgUseCustom) ? '' : 'none';
-        bgGradientGroup.style.display = state.bgMode === 'gradient' ? '' : 'none';
-        bgGradientDirectionGroup.style.display = state.bgMode === 'gradient' ? '' : 'none';
-        saveState();
-        render();
+        commitState();
       });
     });
 
     bgOptions.forEach(function(btn) {
       btn.addEventListener('click', function() {
-        bgOptions.forEach(function(b) { b.classList.remove('active'); });
-        btn.classList.add('active');
         if (btn.dataset.bg === 'custom') {
           state.bgUseCustom = true;
           state.bgColor = state.customBgColor;
@@ -992,9 +1024,7 @@
           state.bgUseCustom = false;
           state.bgColor = btn.dataset.bg;
         }
-        customBgGroup.style.display = (state.bgMode === 'solid' && state.bgUseCustom) ? '' : 'none';
-        saveState();
-        render();
+        commitState();
       });
     });
 
@@ -1003,133 +1033,78 @@
       state.bgUseCustom = true;
       state.bgColor = state.customBgColor;
       state.bgMode = 'solid';
-      updateCustomBackgroundButton();
-      bgModeOptions.forEach(function(button) {
-        button.classList.toggle('active', button.dataset.bgMode === 'solid');
-      });
-      bgSolidGroup.style.display = '';
-      customBgGroup.style.display = '';
-      bgGradientGroup.style.display = 'none';
-      bgGradientDirectionGroup.style.display = 'none';
-      bgOptions.forEach(function(button) {
-        var isCustom = button.dataset.bg === 'custom';
-        button.classList.toggle('active', isCustom);
-      });
-      saveState();
-      render();
+      commitState();
     });
 
     bgGradientColor1Input.addEventListener('input', function(e) {
       state.bgGradientColor1 = e.target.value;
       state.bgMode = 'gradient';
-      bgModeOptions.forEach(function(button) {
-        button.classList.toggle('active', button.dataset.bgMode === 'gradient');
-      });
-      bgSolidGroup.style.display = 'none';
-      customBgGroup.style.display = 'none';
-      bgGradientGroup.style.display = '';
-      bgGradientDirectionGroup.style.display = '';
-      saveState();
-      render();
+      commitState();
     });
 
     bgGradientColor2Input.addEventListener('input', function(e) {
       state.bgGradientColor2 = e.target.value;
       state.bgMode = 'gradient';
-      bgModeOptions.forEach(function(button) {
-        button.classList.toggle('active', button.dataset.bgMode === 'gradient');
-      });
-      bgSolidGroup.style.display = 'none';
-      customBgGroup.style.display = 'none';
-      bgGradientGroup.style.display = '';
-      bgGradientDirectionGroup.style.display = '';
-      saveState();
-      render();
+      commitState();
     });
 
     bgGradientDirectionSelect.addEventListener('change', function(e) {
       state.bgGradientDirection = e.target.value;
       state.bgMode = 'gradient';
-      bgModeOptions.forEach(function(button) {
-        button.classList.toggle('active', button.dataset.bgMode === 'gradient');
-      });
-      bgSolidGroup.style.display = 'none';
-      customBgGroup.style.display = 'none';
-      bgGradientGroup.style.display = '';
-      bgGradientDirectionGroup.style.display = '';
-      saveState();
-      render();
+      commitState();
     });
 
     paletteContainer.addEventListener('click', function(e) {
       var swatch = e.target.closest('.palette-swatch');
       if (!swatch) return;
       state.palette = swatch.dataset.palette;
-      paletteContainer.querySelectorAll('.palette-swatch').forEach(function(b) { b.classList.remove('active'); });
-      swatch.classList.add('active');
-      customColorsGroup.style.display = state.palette === 'custom' ? '' : 'none';
-      textColorGroup.style.display = 'none';
-      saveState();
-      render();
+      commitState();
     });
 
     directionSelect.addEventListener('change', function(e) {
       state.gradientDirection = e.target.value;
-      saveState();
-      render();
+      commitState();
     });
 
     customColor1Input.addEventListener('input', function(e) {
       state.customColor1 = e.target.value;
-      updateCustomSwatch();
-      saveState();
-      render();
+      commitState();
     });
 
     customColor2Input.addEventListener('input', function(e) {
       state.customColor2 = e.target.value;
-      updateCustomSwatch();
-      saveState();
-      render();
+      commitState();
     });
 
     exportScaleSlider.addEventListener('input', function(e) {
-      state.exportScale = parseInt(e.target.value);
-      exportScaleValue.textContent = state.exportScale;
-      saveState();
+      state.exportScale = parseInt(e.target.value, 10);
+      commitState(false);
     });
 
     exportPaddingSlider.addEventListener('input', function(e) {
-      state.exportPadding = parseInt(e.target.value);
-      exportPaddingValue.textContent = state.exportPadding;
-      saveState();
-      render();
+      state.exportPadding = parseInt(e.target.value, 10);
+      commitState();
     });
 
     transparentBgCheckbox.addEventListener('change', function(e) {
       state.transparentBg = e.target.checked;
-      saveState();
+      commitState(false);
     });
 
     exportLogoOnlyCheckbox.addEventListener('change', function(e) {
       state.exportLogoOnly = e.target.checked;
-      saveState();
-      render();
+      commitState();
     });
 
     italicModeSelect.addEventListener('change', function(e) {
       state.italicMode = e.target.value;
       state.italicAmount = 0;
-      syncControls();
-      saveState();
-      render();
+      commitState();
     });
 
     italicSlider.addEventListener('input', function(e) {
-      state.italicAmount = parseInt(e.target.value);
-      italicValue.textContent = state.italicAmount;
-      saveState();
-      render();
+      state.italicAmount = parseInt(e.target.value, 10);
+      commitState();
     });
 
     copyTextBtn.addEventListener('click', copyText);
@@ -1173,8 +1148,9 @@
       taglineOutput.style.fontSize = state.taglineSize + 'px';
       taglineOutput.style.fontFamily = TAGLINE_FONT_MAP[state.taglineFont];
       taglineOutput.style.letterSpacing = state.taglineSpacing + 'px';
-      taglineOutput.style.wordSpacing = '8px';
+      taglineOutput.style.wordSpacing = TAGLINE_WORD_SPACING + 'px';
       taglineOutput.style.textTransform = state.taglineTransform;
+      taglineOutput.style.lineHeight = String(TAGLINE_LINE_HEIGHT);
       taglineOutput.style.whiteSpace = state.taglineSingleLine ? 'nowrap' : 'normal';
     } else {
       taglineOutput.style.display = 'none';
@@ -1184,7 +1160,6 @@
     logoPreview.style.padding = state.exportPadding + 'px';
     logoPreview.style.textAlign = state.align;
     schedulePreviewScale();
-    saveState();
   }
 
   // --- Export ---
@@ -1271,12 +1246,7 @@
       ? '<div class="tagline">' + generateTaglineHtml(state.tagline, state.palette, state.gradientDirection, state.textColor) + '</div>'
       : '';
 
-    var taglineFontImport = '';
-    if (state.taglineFont === 'mono' || state.taglineFont === 'sans') {
-      // Both JetBrains Mono and Space Grotesk already in the main import
-    }
-
-    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + getBackgroundCss() + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.exportPadding + 'px; }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; display: inline-block;' + (skewDeg ? ' transform: skewX(' + skewDeg + 'deg);' : '') + ' }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: 8px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: 1.6; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
+    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'' + getExportGoogleFontsUrl() + '\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + getBackgroundCss() + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.exportPadding + 'px; }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; display: inline-block;' + (skewDeg ? ' transform: skewX(' + skewDeg + 'deg);' : '') + ' }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: ' + TAGLINE_WORD_SPACING + 'px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: ' + TAGLINE_LINE_HEIGHT + '; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
 
     var blob = new Blob([html], { type: 'text/html' });
     var link = document.createElement('a');
@@ -1313,30 +1283,6 @@
       var asciiCharWidth = mctx.measureText('\u2588').width;
       var asciiLineHeight = state.logoSize * scale * state.lineHeight;
 
-      // Measure tagline
-      mctx.font = taglineFontCss;
-      var taglineText = state.tagline;
-      if (state.taglineTransform === 'uppercase') taglineText = taglineText.toUpperCase();
-      else if (state.taglineTransform === 'lowercase') taglineText = taglineText.toLowerCase();
-
-      // Compute total tagline width including letter-spacing
-      var taglineChars = exportTagline ? taglineText.split('') : [];
-      var taglineCharWidths = [];
-      var taglineTotalWidth = 0;
-      taglineChars.forEach(function(c) {
-        var w = mctx.measureText(c).width;
-        taglineCharWidths.push(w);
-        taglineTotalWidth += w + state.taglineSpacing * scale;
-      });
-      // Remove trailing letter-spacing
-      if (taglineChars.length > 0) taglineTotalWidth -= state.taglineSpacing * scale;
-      // Account for word-spacing
-      taglineChars.forEach(function(c, i) {
-        if (c === ' ') {
-          taglineTotalWidth += 8 * scale; // extra word-spacing
-        }
-      });
-
       var gridCols = hasText ? Math.max.apply(null, grid.map(function(r) { return r.length; })) : 0;
       var asciiWidth = gridCols * asciiCharWidth;
       var asciiHeight = hasText ? grid.length * asciiLineHeight : 0;
@@ -1347,12 +1293,27 @@
       var ruleWidth = ruleStr ? mctx.measureText(ruleStr).width : 0;
       var ruleHeight = exportRule ? state.logoSize * scale * 1.6 : 0;
 
-      var taglineHeight = exportTagline ? state.taglineSize * scale * 1.8 : 0;
-
       var pad = state.exportPadding * scale;
       // Extra width needed when skew shears the ASCII block horizontally
       var pngSkewDeg = state.italicMode === 'skew' ? state.italicAmount : 0;
       var skewExtra = pngSkewDeg ? Math.abs(Math.tan(pngSkewDeg * Math.PI / 180)) * asciiHeight : 0;
+      var referenceContentWidth = Math.max(asciiWidth + skewExtra, ruleWidth);
+
+      // Measure tagline
+      mctx.font = taglineFontCss;
+      var letterSpacing = state.taglineSpacing * scale;
+      var wordSpacing = TAGLINE_WORD_SPACING * scale;
+      var taglineLines = exportTagline
+        ? wrapTaglineText(mctx, getTaglineText(state.tagline), referenceContentWidth, letterSpacing, wordSpacing).map(function(line) {
+            return getTaglineLineLayout(mctx, line, letterSpacing, wordSpacing);
+          })
+        : [];
+      var taglineTotalWidth = taglineLines.reduce(function(maxWidth, line) {
+        return Math.max(maxWidth, line.width);
+      }, 0);
+      var taglineLineHeight = exportTagline ? state.taglineSize * scale * TAGLINE_LINE_HEIGHT : 0;
+      var taglineHeight = taglineLines.length * taglineLineHeight;
+
       var contentWidth = Math.max(asciiWidth + skewExtra, ruleWidth, taglineTotalWidth);
       var canvasWidth = contentWidth + pad * 2;
       var canvasHeight = asciiHeight + ruleHeight + taglineHeight + pad * 2;
@@ -1435,24 +1396,28 @@
       if (exportTagline) {
         ctx.font = taglineFontCss;
         ctx.textBaseline = 'top';
-        var tagX = alignOffset(taglineTotalWidth);
-        var curX = tagX;
+        taglineLines.forEach(function(line, lineIndex) {
+          var lineX = alignOffset(line.width);
+          var curX = lineX;
+          var lineY = yOffset + lineIndex * taglineLineHeight + state.taglineSize * scale * 0.15;
 
-        taglineChars.forEach(function(c, ci) {
-          if (c === ' ') {
-            curX += taglineCharWidths[ci] + state.taglineSpacing * scale + 8 * scale;
-            return;
-          }
-          var color;
-          if (colors) {
-            var t = taglineChars.length > 1 ? ci / (taglineChars.length - 1) : 0;
-            color = getGradientColor(colors, t);
-          } else {
-            color = state.textColor;
-          }
-          ctx.fillStyle = color;
-          ctx.fillText(c, curX, yOffset + taglineHeight * 0.15);
-          curX += taglineCharWidths[ci] + state.taglineSpacing * scale;
+          line.chars.forEach(function(c, ci) {
+            if (c === ' ') {
+              curX += line.charWidths[ci] + letterSpacing + wordSpacing;
+              return;
+            }
+
+            var color;
+            if (colors) {
+              var t = line.chars.length > 1 ? ci / (line.chars.length - 1) : 0;
+              color = getGradientColor(colors, t);
+            } else {
+              color = state.textColor;
+            }
+            ctx.fillStyle = color;
+            ctx.fillText(c, curX, lineY);
+            curX += line.charWidths[ci] + letterSpacing;
+          });
         });
       }
 

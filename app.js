@@ -82,6 +82,12 @@
   const MAX_TAGLINE_LENGTH = 120;
   const MIN_RULE_LENGTH_PERCENT = 25;
   const MAX_RULE_LENGTH_PERCENT = 200;
+  const SETTINGS_EXPORT_VERSION = 1;
+  const ALIGN_VALUES = ['left', 'center', 'right'];
+  const TAGLINE_TRANSFORM_VALUES = ['none', 'uppercase', 'lowercase'];
+  const GRADIENT_DIRECTION_VALUES = ['vertical', 'horizontal', 'diagonal'];
+  const ITALIC_MODE_VALUES = ['none', 'skew', 'block'];
+  const RULE_STYLE_VALUES = ['┄', '─', '═', '━', '-', '=', '·', '•', '~', 'custom'];
   const STORAGE_KEY = 'abc-logo-generator:v4';
 
   // DOM Elements
@@ -115,8 +121,11 @@
   const showTaglineCheckbox = document.getElementById('show-tagline');
   const bgOptions = document.querySelectorAll('.bg-option');
   const copyTextBtn = document.getElementById('copy-text');
+  const exportSettingsBtn = document.getElementById('export-settings');
+  const importSettingsBtn = document.getElementById('import-settings');
   const exportHtmlBtn = document.getElementById('export-html');
   const exportPngBtn = document.getElementById('export-png');
+  const settingsImportInput = document.getElementById('settings-import-input');
   const exportScaleSlider = document.getElementById('export-scale');
   const exportScaleValue = document.getElementById('export-scale-value');
   const transparentBgCheckbox = document.getElementById('transparent-bg');
@@ -139,37 +148,41 @@
   const italicLabel = document.getElementById('italic-label');
   const italicUnit = document.getElementById('italic-unit');
 
+  function getDefaultState() {
+    return {
+      text: 'ABC',
+      tagline: 'agentic builders collective',
+      font: 'block',
+      blockStyle: 'solid',
+      textColor: '#ffffff',
+      bgColor: '#000000',
+      logoSize: 21,
+      taglineSize: 16,
+      taglineFont: 'mono',
+      taglineSpacing: 4,
+      taglineTransform: 'none',
+      taglineSingleLine: true,
+      lineHeight: 1.15,
+      padding: 60,
+      align: 'center',
+      showRule: true,
+      ruleStyle: '\u2504',
+      ruleLengthPercent: 100,
+      ruleCustomChar: '\u2500',
+      showTagline: true,
+      palette: 'sunset',
+      gradientDirection: 'vertical',
+      exportScale: 150,
+      transparentBg: false,
+      customColor1: '#ff6b6b',
+      customColor2: '#4ecdc4',
+      italicMode: 'none',
+      italicAmount: 0
+    };
+  }
+
   // State
-  let state = {
-    text: 'ABC',
-    tagline: 'agentic builders collective',
-    font: 'block',
-    blockStyle: 'solid',
-    textColor: '#ffffff',
-    bgColor: '#000000',
-    logoSize: 21,
-    taglineSize: 16,
-    taglineFont: 'mono',
-    taglineSpacing: 4,
-    taglineTransform: 'none',
-    taglineSingleLine: true,
-    lineHeight: 1.15,
-    padding: 60,
-    align: 'center',
-    showRule: true,
-    ruleStyle: '\u2504',
-    ruleLengthPercent: 100,
-    ruleCustomChar: '\u2500',
-    showTagline: true,
-    palette: 'sunset',
-    gradientDirection: 'vertical',
-    exportScale: 150,
-    transparentBg: false,
-    customColor1: '#ff6b6b',
-    customColor2: '#4ecdc4',
-    italicMode: 'none',
-    italicAmount: 0
-  };
+  let state = getDefaultState();
 
   // --- Colour utilities ---
 
@@ -392,6 +405,107 @@
     return Math.max(MIN_RULE_LENGTH_PERCENT, Math.min(MAX_RULE_LENGTH_PERCENT, value));
   }
 
+  function clampNumber(value, min, max, fallback) {
+    if (!Number.isFinite(value)) return fallback;
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function isHexColor(value) {
+    return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
+  }
+
+  function normaliseChoice(value, allowed, fallback) {
+    return allowed.indexOf(value) !== -1 ? value : fallback;
+  }
+
+  function normaliseText(value, fallback, maxLength) {
+    return typeof value === 'string' ? value.slice(0, maxLength) : fallback;
+  }
+
+  function normaliseState(saved) {
+    var defaults = getDefaultState();
+    var source = saved && typeof saved === 'object' ? saved : {};
+    var rawLogoSize = Number.isFinite(source.logoSize) ? source.logoSize : source.fontSize;
+    var rawRuleStyle = source.ruleStyle;
+    var ruleCustomChar = normaliseText(source.ruleCustomChar, defaults.ruleCustomChar, 3) || defaults.ruleCustomChar;
+
+    if (typeof rawRuleStyle === 'string' && RULE_STYLE_VALUES.indexOf(rawRuleStyle) === -1 && rawRuleStyle.length > 0 && rawRuleStyle.length <= 3) {
+      ruleCustomChar = rawRuleStyle;
+      rawRuleStyle = 'custom';
+    }
+
+    var italicMode = normaliseChoice(
+      source.italicMode,
+      ITALIC_MODE_VALUES,
+      Number.isFinite(source.italic) && source.italic !== 0 ? 'skew' : defaults.italicMode
+    );
+    var rawItalicAmount = Number.isFinite(source.italicAmount) ? source.italicAmount : source.italic;
+    var italicAmount = 0;
+
+    if (italicMode === 'skew') {
+      italicAmount = clampNumber(rawItalicAmount, -20, 20, defaults.italicAmount);
+    } else if (italicMode === 'block') {
+      italicAmount = clampNumber(rawItalicAmount, -6, 6, defaults.italicAmount);
+    }
+
+    return {
+      text: normaliseText(source.text, defaults.text, MAX_TEXT_LENGTH),
+      tagline: normaliseText(source.tagline, defaults.tagline, MAX_TAGLINE_LENGTH),
+      font: source.font && FONT_OPTIONS[source.font] ? source.font : defaults.font,
+      blockStyle: source.blockStyle && BLOCK_STYLES[source.blockStyle] ? source.blockStyle : defaults.blockStyle,
+      textColor: isHexColor(source.textColor) ? source.textColor : defaults.textColor,
+      bgColor: isHexColor(source.bgColor) ? source.bgColor : defaults.bgColor,
+      logoSize: clampNumber(rawLogoSize, 6, 48, defaults.logoSize),
+      taglineSize: clampNumber(source.taglineSize, 8, 36, defaults.taglineSize),
+      taglineFont: source.taglineFont && TAGLINE_FONT_MAP[source.taglineFont] ? source.taglineFont : defaults.taglineFont,
+      taglineSpacing: clampNumber(source.taglineSpacing, 0, 20, defaults.taglineSpacing),
+      taglineTransform: normaliseChoice(source.taglineTransform, TAGLINE_TRANSFORM_VALUES, defaults.taglineTransform),
+      taglineSingleLine: typeof source.taglineSingleLine === 'boolean' ? source.taglineSingleLine : defaults.taglineSingleLine,
+      lineHeight: clampNumber(source.lineHeight, 0.8, 1.8, defaults.lineHeight),
+      padding: clampNumber(source.padding, 20, 120, defaults.padding),
+      align: normaliseChoice(source.align, ALIGN_VALUES, defaults.align),
+      showRule: typeof source.showRule === 'boolean' ? source.showRule : defaults.showRule,
+      ruleStyle: normaliseChoice(rawRuleStyle, RULE_STYLE_VALUES, defaults.ruleStyle),
+      ruleLengthPercent: clampRuleLengthPercent(source.ruleLengthPercent),
+      ruleCustomChar: ruleCustomChar,
+      showTagline: typeof source.showTagline === 'boolean' ? source.showTagline : defaults.showTagline,
+      palette: source.palette && GRADIENT_PALETTES[source.palette] ? source.palette : defaults.palette,
+      gradientDirection: normaliseChoice(source.gradientDirection, GRADIENT_DIRECTION_VALUES, defaults.gradientDirection),
+      exportScale: clampNumber(source.exportScale, 100, 300, defaults.exportScale),
+      transparentBg: typeof source.transparentBg === 'boolean' ? source.transparentBg : defaults.transparentBg,
+      customColor1: isHexColor(source.customColor1) ? source.customColor1 : defaults.customColor1,
+      customColor2: isHexColor(source.customColor2) ? source.customColor2 : defaults.customColor2,
+      italicMode: italicMode,
+      italicAmount: italicAmount
+    };
+  }
+
+  function getSettingsExportPayload() {
+    return {
+      app: 'abc-logo-generator',
+      version: SETTINGS_EXPORT_VERSION,
+      exportedAt: new Date().toISOString(),
+      settings: Object.assign({}, state)
+    };
+  }
+
+  function extractImportedSettings(payload) {
+    if (!payload || typeof payload !== 'object') {
+      throw new Error('Invalid settings file');
+    }
+    if (payload.settings && typeof payload.settings === 'object') {
+      return payload.settings;
+    }
+    return payload;
+  }
+
+  function applyImportedState(nextState) {
+    state = normaliseState(nextState);
+    buildPaletteSwatches();
+    syncControls();
+    render();
+  }
+
   function getRuleRepeatCount(grid) {
     if (grid.length === 0) return 0;
     var baseWidth = grid.contentCols || grid[0].length;
@@ -466,41 +580,7 @@
       }
       if (!raw) return;
 
-      var saved = JSON.parse(raw);
-
-      // Legacy migration: map fontSize to logoSize
-      var logoSize = Number.isFinite(saved.logoSize) ? saved.logoSize : (Number.isFinite(saved.fontSize) ? saved.fontSize : state.logoSize);
-
-      state = {
-        text: (saved.text || state.text).slice(0, MAX_TEXT_LENGTH),
-        tagline: (saved.tagline || state.tagline).slice(0, MAX_TAGLINE_LENGTH),
-        font: saved.font && FONT_OPTIONS[saved.font] ? saved.font : state.font,
-        blockStyle: saved.blockStyle || state.blockStyle,
-        textColor: saved.textColor || state.textColor,
-        bgColor: saved.bgColor || state.bgColor,
-        logoSize: logoSize,
-        taglineSize: Number.isFinite(saved.taglineSize) ? saved.taglineSize : state.taglineSize,
-        taglineFont: saved.taglineFont && TAGLINE_FONT_MAP[saved.taglineFont] ? saved.taglineFont : state.taglineFont,
-        taglineSpacing: Number.isFinite(saved.taglineSpacing) ? saved.taglineSpacing : state.taglineSpacing,
-        taglineTransform: ['none', 'uppercase', 'lowercase'].indexOf(saved.taglineTransform) !== -1 ? saved.taglineTransform : state.taglineTransform,
-        taglineSingleLine: typeof saved.taglineSingleLine === 'boolean' ? saved.taglineSingleLine : state.taglineSingleLine,
-        lineHeight: Number.isFinite(saved.lineHeight) ? saved.lineHeight : state.lineHeight,
-        padding: Number.isFinite(saved.padding) ? saved.padding : state.padding,
-        align: ['left', 'center', 'right'].indexOf(saved.align) !== -1 ? saved.align : state.align,
-        showRule: typeof saved.showRule === 'boolean' ? saved.showRule : state.showRule,
-        ruleStyle: saved.ruleStyle || state.ruleStyle,
-        ruleLengthPercent: clampRuleLengthPercent(saved.ruleLengthPercent),
-        ruleCustomChar: saved.ruleCustomChar || state.ruleCustomChar,
-        showTagline: typeof saved.showTagline === 'boolean' ? saved.showTagline : state.showTagline,
-        palette: saved.palette && GRADIENT_PALETTES[saved.palette] ? saved.palette : state.palette,
-        gradientDirection: saved.gradientDirection || state.gradientDirection,
-        exportScale: Number.isFinite(saved.exportScale) ? saved.exportScale : state.exportScale,
-        transparentBg: typeof saved.transparentBg === 'boolean' ? saved.transparentBg : state.transparentBg,
-        customColor1: saved.customColor1 || state.customColor1,
-        customColor2: saved.customColor2 || state.customColor2,
-        italicMode: ['none', 'skew', 'block'].indexOf(saved.italicMode) !== -1 ? saved.italicMode : (saved.italic ? 'skew' : state.italicMode),
-        italicAmount: Number.isFinite(saved.italicAmount) ? saved.italicAmount : (Number.isFinite(saved.italic) && saved.italic !== 0 ? saved.italic : state.italicAmount)
-      };
+      state = normaliseState(JSON.parse(raw));
     } catch (error) { /* ignore */ }
   }
 
@@ -811,6 +891,11 @@
     });
 
     copyTextBtn.addEventListener('click', copyText);
+    exportSettingsBtn.addEventListener('click', exportSettings);
+    importSettingsBtn.addEventListener('click', function() {
+      settingsImportInput.click();
+    });
+    settingsImportInput.addEventListener('change', importSettings);
     exportHtmlBtn.addEventListener('click', exportHtml);
     exportPngBtn.addEventListener('click', exportPng);
   }
@@ -891,6 +976,41 @@
       showToast('Unable to copy.');
     }
     document.body.removeChild(ta);
+  }
+
+  function exportSettings() {
+    var payload = getSettingsExportPayload();
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var link = document.createElement('a');
+    link.download = (state.text || 'logo') + '-settings.json';
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showToast('Settings exported.');
+  }
+
+  function importSettings(event) {
+    var file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function(loadEvent) {
+      try {
+        var raw = String(loadEvent.target.result || '');
+        var payload = JSON.parse(raw);
+        applyImportedState(extractImportedSettings(payload));
+        showToast('Settings imported.');
+      } catch (error) {
+        showToast('Unable to import settings.');
+      } finally {
+        settingsImportInput.value = '';
+      }
+    };
+    reader.onerror = function() {
+      settingsImportInput.value = '';
+      showToast('Unable to import settings.');
+    };
+    reader.readAsText(file);
   }
 
   function exportHtml() {

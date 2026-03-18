@@ -88,6 +88,7 @@
   const GRADIENT_DIRECTION_VALUES = ['vertical', 'horizontal', 'diagonal'];
   const ITALIC_MODE_VALUES = ['none', 'skew', 'block'];
   const RULE_STYLE_VALUES = ['┄', '─', '═', '━', '-', '=', '·', '•', '~', 'custom'];
+  const BG_PRESET_VALUES = ['#000000', '#0d1117', '#1a1a2e', '#ffffff'];
   const STORAGE_KEY = 'abc-logo-generator:v4';
 
   // DOM Elements
@@ -120,6 +121,9 @@
   const showRuleCheckbox = document.getElementById('show-rule');
   const showTaglineCheckbox = document.getElementById('show-tagline');
   const bgOptions = document.querySelectorAll('.bg-option');
+  const customBgGroup = document.getElementById('custom-bg-group');
+  const customBgColorInput = document.getElementById('custom-bg-color');
+  const customBgButton = document.querySelector('.bg-option-custom');
   const copyTextBtn = document.getElementById('copy-text');
   const exportSettingsBtn = document.getElementById('export-settings');
   const importSettingsBtn = document.getElementById('import-settings');
@@ -157,6 +161,8 @@
       blockStyle: 'solid',
       textColor: '#ffffff',
       bgColor: '#000000',
+      bgUseCustom: false,
+      customBgColor: '#000000',
       logoSize: 26,
       taglineSize: 20,
       taglineFont: 'spacemono',
@@ -210,6 +216,10 @@
   function dimColor(hex, factor) {
     const [r, g, b] = hexToRgb(hex);
     return rgbToHex(Math.round(r * factor), Math.round(g * factor), Math.round(b * factor));
+  }
+
+  function getSettingsIconSvg() {
+    return '<svg class="swatch-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3.25v2.3M12 18.45v2.3M5.82 5.82l1.63 1.63M16.55 16.55l1.63 1.63M3.25 12h2.3M18.45 12h2.3M5.82 18.18l1.63-1.63M16.55 7.45l1.63-1.63" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 7.3a4.7 4.7 0 1 1 0 9.4a4.7 4.7 0 0 1 0-9.4Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>';
   }
 
   function getGradientColor(colors, t) {
@@ -429,7 +439,18 @@
     var source = saved && typeof saved === 'object' ? saved : {};
     var rawLogoSize = Number.isFinite(source.logoSize) ? source.logoSize : source.fontSize;
     var rawRuleStyle = source.ruleStyle;
+    var rawBgColor = isHexColor(source.bgColor) ? source.bgColor : defaults.bgColor;
+    var customBgColor = isHexColor(source.customBgColor)
+      ? source.customBgColor
+      : (BG_PRESET_VALUES.indexOf(rawBgColor) === -1 ? rawBgColor : defaults.customBgColor);
+    var bgUseCustom = typeof source.bgUseCustom === 'boolean'
+      ? source.bgUseCustom
+      : BG_PRESET_VALUES.indexOf(rawBgColor) === -1;
     var ruleCustomChar = normaliseText(source.ruleCustomChar, defaults.ruleCustomChar, 3) || defaults.ruleCustomChar;
+
+    if (bgUseCustom) {
+      rawBgColor = customBgColor;
+    }
 
     if (typeof rawRuleStyle === 'string' && RULE_STYLE_VALUES.indexOf(rawRuleStyle) === -1 && rawRuleStyle.length > 0 && rawRuleStyle.length <= 3) {
       ruleCustomChar = rawRuleStyle;
@@ -456,7 +477,9 @@
       font: source.font && FONT_OPTIONS[source.font] ? source.font : defaults.font,
       blockStyle: source.blockStyle && BLOCK_STYLES[source.blockStyle] ? source.blockStyle : defaults.blockStyle,
       textColor: isHexColor(source.textColor) ? source.textColor : defaults.textColor,
-      bgColor: isHexColor(source.bgColor) ? source.bgColor : defaults.bgColor,
+      bgColor: rawBgColor,
+      bgUseCustom: bgUseCustom,
+      customBgColor: customBgColor,
       logoSize: clampNumber(rawLogoSize, 6, 48, defaults.logoSize),
       taglineSize: clampNumber(source.taglineSize, 8, 36, defaults.taglineSize),
       taglineFont: source.taglineFont && TAGLINE_FONT_MAP[source.taglineFont] ? source.taglineFont : defaults.taglineFont,
@@ -576,6 +599,7 @@
 
   function init() {
     loadState();
+    customBgButton.innerHTML = getSettingsIconSvg();
     buildPaletteSwatches();
     syncControls();
     setupEventListeners();
@@ -618,7 +642,7 @@
         btn.title = 'Custom';
         btn.classList.add('palette-swatch-custom');
         btn.style.background = 'linear-gradient(135deg, ' + state.customColor1 + ', ' + state.customColor2 + ')';
-        btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 2a1.5 1.5 0 0 0-1.5 1.5v.7a5 5 0 0 0-1.3.5l-.5-.5a1.5 1.5 0 1 0-2.1 2.1l.5.5a5 5 0 0 0-.5 1.3h-.7a1.5 1.5 0 0 0 0 3h.7a5 5 0 0 0 .5 1.3l-.5.5a1.5 1.5 0 1 0 2.1 2.1l.5-.5a5 5 0 0 0 1.3.5v.7a1.5 1.5 0 0 0 3 0v-.7a5 5 0 0 0 1.3-.5l.5.5a1.5 1.5 0 0 0 2.1-2.1l-.5-.5a5 5 0 0 0 .5-1.3h.7a1.5 1.5 0 0 0 0-3h-.7a5 5 0 0 0-.5-1.3l.5-.5a1.5 1.5 0 0 0-2.1-2.1l-.5.5a5 5 0 0 0-1.3-.5v-.7A1.5 1.5 0 0 0 8 2ZM6 8a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z" fill="currentColor"/></svg>';
+        btn.innerHTML = getSettingsIconSvg();
       } else {
         var palette = GRADIENT_PALETTES[key];
         btn.title = palette.name;
@@ -635,6 +659,11 @@
     if (swatch) {
       swatch.style.background = 'linear-gradient(135deg, ' + state.customColor1 + ', ' + state.customColor2 + ')';
     }
+  }
+
+  function updateCustomBackgroundButton() {
+    var lightTone = lerpColor(state.customBgColor, '#ffffff', 0.2);
+    customBgButton.style.background = 'linear-gradient(135deg, ' + lightTone + ', ' + state.customBgColor + ')';
   }
 
   function syncControls() {
@@ -670,8 +699,12 @@
     showTaglineCheckbox.checked = state.showTagline;
     directionSelect.value = state.gradientDirection;
     bgOptions.forEach(function(button) {
-      button.classList.toggle('active', button.dataset.bg === state.bgColor);
+      var isCustom = button.dataset.bg === 'custom';
+      button.classList.toggle('active', isCustom ? state.bgUseCustom : (!state.bgUseCustom && button.dataset.bg === state.bgColor));
     });
+    customBgColorInput.value = state.customBgColor;
+    customBgGroup.style.display = state.bgUseCustom ? '' : 'none';
+    updateCustomBackgroundButton();
     alignOptions.forEach(function(button) {
       button.classList.toggle('active', button.dataset.align === state.align);
     });
@@ -838,10 +871,31 @@
       btn.addEventListener('click', function() {
         bgOptions.forEach(function(b) { b.classList.remove('active'); });
         btn.classList.add('active');
-        state.bgColor = btn.dataset.bg;
+        if (btn.dataset.bg === 'custom') {
+          state.bgUseCustom = true;
+          state.bgColor = state.customBgColor;
+        } else {
+          state.bgUseCustom = false;
+          state.bgColor = btn.dataset.bg;
+        }
+        customBgGroup.style.display = state.bgUseCustom ? '' : 'none';
         saveState();
         render();
       });
+    });
+
+    customBgColorInput.addEventListener('input', function(e) {
+      state.customBgColor = e.target.value;
+      state.bgUseCustom = true;
+      state.bgColor = state.customBgColor;
+      updateCustomBackgroundButton();
+      customBgGroup.style.display = '';
+      bgOptions.forEach(function(button) {
+        var isCustom = button.dataset.bg === 'custom';
+        button.classList.toggle('active', isCustom);
+      });
+      saveState();
+      render();
     });
 
     paletteContainer.addEventListener('click', function(e) {

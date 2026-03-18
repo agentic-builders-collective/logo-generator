@@ -18,6 +18,7 @@ Then open `http://localhost:8000`.
 
 - Multiple ASCII logo styles, including pixel and `cfonts`-inspired presets
 - Gradient palette controls and custom colours
+- Solid and gradient background controls
 - Adjustable separator and title styling
 - Settings import/export
 - Text, HTML, and PNG export

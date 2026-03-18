@@ -89,6 +89,7 @@
   const ITALIC_MODE_VALUES = ['none', 'skew', 'block'];
   const RULE_STYLE_VALUES = ['┄', '─', '═', '━', '-', '=', '·', '•', '~', 'custom'];
   const BG_PRESET_VALUES = ['#000000', '#0d1117', '#1a1a2e', '#ffffff'];
+  const BG_MODE_VALUES = ['solid', 'gradient'];
   const MAX_EXPORT_PADDING = 200;
   const STORAGE_KEY = 'abc-logo-generator:v4';
 
@@ -121,10 +122,17 @@
   const alignOptions = document.querySelectorAll('.align-option');
   const showRuleCheckbox = document.getElementById('show-rule');
   const showTaglineCheckbox = document.getElementById('show-tagline');
+  const bgModeOptions = document.querySelectorAll('.bg-mode-option');
+  const bgSolidGroup = document.getElementById('bg-solid-group');
   const bgOptions = document.querySelectorAll('.bg-option');
   const customBgGroup = document.getElementById('custom-bg-group');
   const customBgColorInput = document.getElementById('custom-bg-color');
   const customBgButton = document.querySelector('.bg-option-custom');
+  const bgGradientGroup = document.getElementById('bg-gradient-group');
+  const bgGradientDirectionGroup = document.getElementById('bg-gradient-direction-group');
+  const bgGradientColor1Input = document.getElementById('bg-gradient-color-1');
+  const bgGradientColor2Input = document.getElementById('bg-gradient-color-2');
+  const bgGradientDirectionSelect = document.getElementById('bg-gradient-direction');
   const copyTextBtn = document.getElementById('copy-text');
   const exportSettingsBtn = document.getElementById('export-settings');
   const importSettingsBtn = document.getElementById('import-settings');
@@ -164,8 +172,12 @@
       blockStyle: 'solid',
       textColor: '#ffffff',
       bgColor: '#000000',
+      bgMode: 'solid',
       bgUseCustom: false,
       customBgColor: '#000000',
+      bgGradientColor1: '#09090f',
+      bgGradientColor2: '#1b1f38',
+      bgGradientDirection: 'vertical',
       logoSize: 26,
       taglineSize: 20,
       taglineFont: 'spacemono',
@@ -195,6 +207,7 @@
 
   // State
   let state = getDefaultState();
+  var previewScaleFrame = 0;
 
   // --- Colour utilities ---
 
@@ -224,6 +237,35 @@
 
   function getSettingsIconSvg() {
     return '<svg class="swatch-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3.25v2.3M12 18.45v2.3M5.82 5.82l1.63 1.63M16.55 16.55l1.63 1.63M3.25 12h2.3M18.45 12h2.3M5.82 18.18l1.63-1.63M16.55 7.45l1.63-1.63" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 7.3a4.7 4.7 0 1 1 0 9.4a4.7 4.7 0 0 1 0-9.4Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>';
+  }
+
+  function getBackgroundCss() {
+    if (state.bgMode === 'gradient') {
+      var angle = state.bgGradientDirection === 'horizontal'
+        ? '90deg'
+        : (state.bgGradientDirection === 'diagonal' ? '135deg' : '180deg');
+      return 'linear-gradient(' + angle + ', ' + state.bgGradientColor1 + ', ' + state.bgGradientColor2 + ')';
+    }
+    return state.bgColor;
+  }
+
+  function fillCanvasBackground(ctx, width, height) {
+    if (state.bgMode === 'gradient') {
+      var gradient;
+      if (state.bgGradientDirection === 'horizontal') {
+        gradient = ctx.createLinearGradient(0, 0, width, 0);
+      } else if (state.bgGradientDirection === 'diagonal') {
+        gradient = ctx.createLinearGradient(0, 0, width, height);
+      } else {
+        gradient = ctx.createLinearGradient(0, 0, 0, height);
+      }
+      gradient.addColorStop(0, state.bgGradientColor1);
+      gradient.addColorStop(1, state.bgGradientColor2);
+      ctx.fillStyle = gradient;
+    } else {
+      ctx.fillStyle = state.bgColor;
+    }
+    ctx.fillRect(0, 0, width, height);
   }
 
   function getGradientColor(colors, t) {
@@ -444,6 +486,7 @@
     var rawLogoSize = Number.isFinite(source.logoSize) ? source.logoSize : source.fontSize;
     var rawRuleStyle = source.ruleStyle;
     var rawBgColor = isHexColor(source.bgColor) ? source.bgColor : defaults.bgColor;
+    var bgMode = normaliseChoice(source.bgMode, BG_MODE_VALUES, defaults.bgMode);
     var customBgColor = isHexColor(source.customBgColor)
       ? source.customBgColor
       : (BG_PRESET_VALUES.indexOf(rawBgColor) === -1 ? rawBgColor : defaults.customBgColor);
@@ -482,8 +525,12 @@
       blockStyle: source.blockStyle && BLOCK_STYLES[source.blockStyle] ? source.blockStyle : defaults.blockStyle,
       textColor: isHexColor(source.textColor) ? source.textColor : defaults.textColor,
       bgColor: rawBgColor,
+      bgMode: bgMode,
       bgUseCustom: bgUseCustom,
       customBgColor: customBgColor,
+      bgGradientColor1: isHexColor(source.bgGradientColor1) ? source.bgGradientColor1 : defaults.bgGradientColor1,
+      bgGradientColor2: isHexColor(source.bgGradientColor2) ? source.bgGradientColor2 : defaults.bgGradientColor2,
+      bgGradientDirection: normaliseChoice(source.bgGradientDirection, GRADIENT_DIRECTION_VALUES, defaults.bgGradientDirection),
       logoSize: clampNumber(rawLogoSize, 6, 48, defaults.logoSize),
       taglineSize: clampNumber(source.taglineSize, 8, 36, defaults.taglineSize),
       taglineFont: source.taglineFont && TAGLINE_FONT_MAP[source.taglineFont] ? source.taglineFont : defaults.taglineFont,
@@ -609,7 +656,10 @@
     syncControls();
     setupEventListeners();
     render();
-    window.addEventListener('resize', updatePreviewScale);
+    window.addEventListener('resize', schedulePreviewScale);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(schedulePreviewScale);
+    }
   }
 
   function loadState() {
@@ -672,21 +722,40 @@
     customBgButton.style.background = 'linear-gradient(135deg, ' + lightTone + ', ' + state.customBgColor + ')';
   }
 
+  function schedulePreviewScale() {
+    if (previewScaleFrame && window.cancelAnimationFrame) {
+      window.cancelAnimationFrame(previewScaleFrame);
+    }
+    if (window.requestAnimationFrame) {
+      previewScaleFrame = window.requestAnimationFrame(function() {
+        previewScaleFrame = 0;
+        updatePreviewScale();
+      });
+      return;
+    }
+    updatePreviewScale();
+  }
+
   function updatePreviewScale() {
     logoPreview.style.transform = '';
     previewContainer.style.width = '';
     previewContainer.style.height = '';
 
-    var naturalWidth = logoPreview.offsetWidth;
-    var naturalHeight = logoPreview.offsetHeight;
+    var naturalWidth = Math.max(logoPreview.scrollWidth, Math.ceil(logoPreview.getBoundingClientRect().width));
+    var naturalHeight = Math.max(logoPreview.scrollHeight, Math.ceil(logoPreview.getBoundingClientRect().height));
     if (!naturalWidth || !naturalHeight) return;
 
     var sectionStyles = window.getComputedStyle(previewSection);
     var sectionPaddingX = parseFloat(sectionStyles.paddingLeft) + parseFloat(sectionStyles.paddingRight);
-    var availableWidth = previewSection.clientWidth - sectionPaddingX;
+    var sectionPaddingY = parseFloat(sectionStyles.paddingTop) + parseFloat(sectionStyles.paddingBottom);
+    var availableWidth = Math.max(1, previewSection.clientWidth - sectionPaddingX);
+    var availableHeight = Math.max(1, previewSection.clientHeight - sectionPaddingY);
 
-    var sectionRect = previewSection.getBoundingClientRect();
-    var availableHeight = Math.max(240, window.innerHeight - sectionRect.top - 24);
+    if (!availableHeight) {
+      var sectionRect = previewSection.getBoundingClientRect();
+      availableHeight = Math.max(240, window.innerHeight - sectionRect.top - 24);
+    }
+
     var scale = Math.min(1, availableWidth / naturalWidth, availableHeight / naturalHeight);
 
     previewContainer.style.width = Math.ceil(naturalWidth * scale) + 'px';
@@ -729,9 +798,18 @@
       var isCustom = button.dataset.bg === 'custom';
       button.classList.toggle('active', isCustom ? state.bgUseCustom : (!state.bgUseCustom && button.dataset.bg === state.bgColor));
     });
+    bgModeOptions.forEach(function(button) {
+      button.classList.toggle('active', button.dataset.bgMode === state.bgMode);
+    });
+    bgSolidGroup.style.display = state.bgMode === 'solid' ? '' : 'none';
     customBgColorInput.value = state.customBgColor;
-    customBgGroup.style.display = state.bgUseCustom ? '' : 'none';
+    customBgGroup.style.display = (state.bgMode === 'solid' && state.bgUseCustom) ? '' : 'none';
     updateCustomBackgroundButton();
+    bgGradientGroup.style.display = state.bgMode === 'gradient' ? '' : 'none';
+    bgGradientDirectionGroup.style.display = state.bgMode === 'gradient' ? '' : 'none';
+    bgGradientColor1Input.value = state.bgGradientColor1;
+    bgGradientColor2Input.value = state.bgGradientColor2;
+    bgGradientDirectionSelect.value = state.bgGradientDirection;
     alignOptions.forEach(function(button) {
       button.classList.toggle('active', button.dataset.align === state.align);
     });
@@ -889,6 +967,20 @@
       render();
     });
 
+    bgModeOptions.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        bgModeOptions.forEach(function(button) { button.classList.remove('active'); });
+        btn.classList.add('active');
+        state.bgMode = btn.dataset.bgMode;
+        bgSolidGroup.style.display = state.bgMode === 'solid' ? '' : 'none';
+        customBgGroup.style.display = (state.bgMode === 'solid' && state.bgUseCustom) ? '' : 'none';
+        bgGradientGroup.style.display = state.bgMode === 'gradient' ? '' : 'none';
+        bgGradientDirectionGroup.style.display = state.bgMode === 'gradient' ? '' : 'none';
+        saveState();
+        render();
+      });
+    });
+
     bgOptions.forEach(function(btn) {
       btn.addEventListener('click', function() {
         bgOptions.forEach(function(b) { b.classList.remove('active'); });
@@ -900,7 +992,7 @@
           state.bgUseCustom = false;
           state.bgColor = btn.dataset.bg;
         }
-        customBgGroup.style.display = state.bgUseCustom ? '' : 'none';
+        customBgGroup.style.display = (state.bgMode === 'solid' && state.bgUseCustom) ? '' : 'none';
         saveState();
         render();
       });
@@ -910,12 +1002,61 @@
       state.customBgColor = e.target.value;
       state.bgUseCustom = true;
       state.bgColor = state.customBgColor;
+      state.bgMode = 'solid';
       updateCustomBackgroundButton();
+      bgModeOptions.forEach(function(button) {
+        button.classList.toggle('active', button.dataset.bgMode === 'solid');
+      });
+      bgSolidGroup.style.display = '';
       customBgGroup.style.display = '';
+      bgGradientGroup.style.display = 'none';
+      bgGradientDirectionGroup.style.display = 'none';
       bgOptions.forEach(function(button) {
         var isCustom = button.dataset.bg === 'custom';
         button.classList.toggle('active', isCustom);
       });
+      saveState();
+      render();
+    });
+
+    bgGradientColor1Input.addEventListener('input', function(e) {
+      state.bgGradientColor1 = e.target.value;
+      state.bgMode = 'gradient';
+      bgModeOptions.forEach(function(button) {
+        button.classList.toggle('active', button.dataset.bgMode === 'gradient');
+      });
+      bgSolidGroup.style.display = 'none';
+      customBgGroup.style.display = 'none';
+      bgGradientGroup.style.display = '';
+      bgGradientDirectionGroup.style.display = '';
+      saveState();
+      render();
+    });
+
+    bgGradientColor2Input.addEventListener('input', function(e) {
+      state.bgGradientColor2 = e.target.value;
+      state.bgMode = 'gradient';
+      bgModeOptions.forEach(function(button) {
+        button.classList.toggle('active', button.dataset.bgMode === 'gradient');
+      });
+      bgSolidGroup.style.display = 'none';
+      customBgGroup.style.display = 'none';
+      bgGradientGroup.style.display = '';
+      bgGradientDirectionGroup.style.display = '';
+      saveState();
+      render();
+    });
+
+    bgGradientDirectionSelect.addEventListener('change', function(e) {
+      state.bgGradientDirection = e.target.value;
+      state.bgMode = 'gradient';
+      bgModeOptions.forEach(function(button) {
+        button.classList.toggle('active', button.dataset.bgMode === 'gradient');
+      });
+      bgSolidGroup.style.display = 'none';
+      customBgGroup.style.display = 'none';
+      bgGradientGroup.style.display = '';
+      bgGradientDirectionGroup.style.display = '';
       saveState();
       render();
     });
@@ -1039,10 +1180,10 @@
       taglineOutput.style.display = 'none';
     }
 
-    logoPreview.style.background = state.bgColor;
+    logoPreview.style.background = getBackgroundCss();
     logoPreview.style.padding = state.exportPadding + 'px';
     logoPreview.style.textAlign = state.align;
-    updatePreviewScale();
+    schedulePreviewScale();
     saveState();
   }
 
@@ -1135,7 +1276,7 @@
       // Both JetBrains Mono and Space Grotesk already in the main import
     }
 
-    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + state.bgColor + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.exportPadding + 'px; }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; display: inline-block;' + (skewDeg ? ' transform: skewX(' + skewDeg + 'deg);' : '') + ' }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: 8px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: 1.6; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
+    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + getBackgroundCss() + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.exportPadding + 'px; }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; display: inline-block;' + (skewDeg ? ' transform: skewX(' + skewDeg + 'deg);' : '') + ' }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: 8px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: 1.6; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
 
     var blob = new Blob([html], { type: 'text/html' });
     var link = document.createElement('a');
@@ -1223,8 +1364,7 @@
 
       // Background
       if (!state.transparentBg) {
-        ctx.fillStyle = state.bgColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        fillCanvasBackground(ctx, canvas.width, canvas.height);
       }
 
       // Alignment offset helper

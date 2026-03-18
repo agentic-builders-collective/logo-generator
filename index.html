@@ -170,6 +170,12 @@
           <div class="section-body">
             <div class="control-group">
               <label>Background</label>
+              <div class="align-options bg-mode-options">
+                <button class="align-option bg-mode-option active" data-bg-mode="solid">Solid</button>
+                <button class="align-option bg-mode-option" data-bg-mode="gradient">Gradient</button>
+              </div>
+            </div>
+            <div class="control-group" id="bg-solid-group">
               <div class="bg-options">
                 <button class="bg-option active" data-bg="#000000">Black</button>
                 <button class="bg-option" data-bg="#0d1117">Dark</button>
@@ -182,6 +188,20 @@
               <div class="custom-color-row">
                 <label>Custom background <input type="color" id="custom-bg-color" value="#000000"></label>
               </div>
+            </div>
+            <div class="control-group" id="bg-gradient-group" style="display:none">
+              <div class="custom-color-row">
+                <label>Colour 1 <input type="color" id="bg-gradient-color-1" value="#09090f"></label>
+                <label>Colour 2 <input type="color" id="bg-gradient-color-2" value="#1b1f38"></label>
+              </div>
+            </div>
+            <div class="control-group" id="bg-gradient-direction-group" style="display:none">
+              <label for="bg-gradient-direction">Gradient Direction</label>
+              <select id="bg-gradient-direction">
+                <option value="vertical">Vertical</option>
+                <option value="horizontal">Horizontal</option>
+                <option value="diagonal">Diagonal</option>
+              </select>
             </div>
             <div class="control-group" id="text-color-group" style="display:none">
               <input type="hidden" id="text-color" value="#ffffff">

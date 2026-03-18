@@ -1123,7 +1123,7 @@
     var palette = getResolvedPalette(state.palette);
     var colors = palette ? palette.colors : null;
 
-    var scale = state.exportScale / 100 * 3;
+    var scale = state.exportScale / 100;
 
     document.fonts.ready.then(function() {
       // Measure dimensions

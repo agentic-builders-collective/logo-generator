@@ -89,6 +89,7 @@
   const ITALIC_MODE_VALUES = ['none', 'skew', 'block'];
   const RULE_STYLE_VALUES = ['┄', '─', '═', '━', '-', '=', '·', '•', '~', 'custom'];
   const BG_PRESET_VALUES = ['#000000', '#0d1117', '#1a1a2e', '#ffffff'];
+  const MAX_EXPORT_PADDING = 200;
   const STORAGE_KEY = 'abc-logo-generator:v4';
 
   // DOM Elements
@@ -96,6 +97,8 @@
   const ruleOutput = document.getElementById('rule-output');
   const taglineOutput = document.getElementById('tagline-output');
   const logoPreview = document.getElementById('logo-preview');
+  const previewSection = document.querySelector('.preview-section');
+  const previewContainer = document.querySelector('.preview-container');
 
   const textInput = document.getElementById('logo-text');
   const taglineInput = document.getElementById('tagline-text');
@@ -115,8 +118,6 @@
   const taglineSpacingValue = document.getElementById('tagline-spacing-value');
   const taglineCaseSelect = document.getElementById('tagline-case');
   const taglineSingleLineCheckbox = document.getElementById('tagline-single-line');
-  const paddingSlider = document.getElementById('padding-size');
-  const paddingValue = document.getElementById('padding-value');
   const alignOptions = document.querySelectorAll('.align-option');
   const showRuleCheckbox = document.getElementById('show-rule');
   const showTaglineCheckbox = document.getElementById('show-tagline');
@@ -132,6 +133,8 @@
   const settingsImportInput = document.getElementById('settings-import-input');
   const exportScaleSlider = document.getElementById('export-scale');
   const exportScaleValue = document.getElementById('export-scale-value');
+  const exportPaddingSlider = document.getElementById('export-padding');
+  const exportPaddingValue = document.getElementById('export-padding-value');
   const transparentBgCheckbox = document.getElementById('transparent-bg');
   const exportLogoOnlyCheckbox = document.getElementById('export-logo-only');
   const ruleStyleSelect = document.getElementById('rule-style');
@@ -180,6 +183,7 @@
       palette: 'ice',
       gradientDirection: 'vertical',
       exportScale: 150,
+      exportPadding: 72,
       transparentBg: true,
       exportLogoOnly: false,
       customColor1: '#ff6b6b',
@@ -497,6 +501,7 @@
       palette: source.palette && GRADIENT_PALETTES[source.palette] ? source.palette : defaults.palette,
       gradientDirection: normaliseChoice(source.gradientDirection, GRADIENT_DIRECTION_VALUES, defaults.gradientDirection),
       exportScale: clampNumber(source.exportScale, 100, 300, defaults.exportScale),
+      exportPadding: clampNumber(Number.isFinite(source.exportPadding) ? source.exportPadding : source.padding, 0, MAX_EXPORT_PADDING, defaults.exportPadding),
       transparentBg: typeof source.transparentBg === 'boolean' ? source.transparentBg : defaults.transparentBg,
       exportLogoOnly: typeof source.exportLogoOnly === 'boolean' ? source.exportLogoOnly : defaults.exportLogoOnly,
       customColor1: isHexColor(source.customColor1) ? source.customColor1 : defaults.customColor1,
@@ -604,6 +609,7 @@
     syncControls();
     setupEventListeners();
     render();
+    window.addEventListener('resize', updatePreviewScale);
   }
 
   function loadState() {
@@ -666,6 +672,29 @@
     customBgButton.style.background = 'linear-gradient(135deg, ' + lightTone + ', ' + state.customBgColor + ')';
   }
 
+  function updatePreviewScale() {
+    logoPreview.style.transform = '';
+    previewContainer.style.width = '';
+    previewContainer.style.height = '';
+
+    var naturalWidth = logoPreview.offsetWidth;
+    var naturalHeight = logoPreview.offsetHeight;
+    if (!naturalWidth || !naturalHeight) return;
+
+    var sectionStyles = window.getComputedStyle(previewSection);
+    var sectionPaddingX = parseFloat(sectionStyles.paddingLeft) + parseFloat(sectionStyles.paddingRight);
+    var availableWidth = previewSection.clientWidth - sectionPaddingX;
+
+    var sectionRect = previewSection.getBoundingClientRect();
+    var availableHeight = Math.max(240, window.innerHeight - sectionRect.top - 24);
+    var scale = Math.min(1, availableWidth / naturalWidth, availableHeight / naturalHeight);
+
+    previewContainer.style.width = Math.ceil(naturalWidth * scale) + 'px';
+    previewContainer.style.height = Math.ceil(naturalHeight * scale) + 'px';
+    logoPreview.style.transformOrigin = 'top left';
+    logoPreview.style.transform = scale < 1 ? 'scale(' + scale + ')' : '';
+  }
+
   function syncControls() {
     textInput.value = state.text;
     taglineInput.value = state.tagline;
@@ -683,8 +712,6 @@
     taglineSpacingValue.textContent = state.taglineSpacing;
     taglineCaseSelect.value = state.taglineTransform;
     taglineSingleLineCheckbox.checked = state.taglineSingleLine;
-    paddingSlider.value = state.padding;
-    paddingValue.textContent = state.padding;
     showRuleCheckbox.checked = state.showRule;
     ruleStyleSelect.value = state.ruleStyle === 'custom' ? 'custom' : state.ruleStyle;
     if (state.ruleStyle !== 'custom' && !ruleStyleSelect.querySelector('option[value="' + state.ruleStyle + '"]')) {
@@ -713,6 +740,8 @@
     });
     exportScaleSlider.value = state.exportScale;
     exportScaleValue.textContent = state.exportScale;
+    exportPaddingSlider.value = state.exportPadding;
+    exportPaddingValue.textContent = state.exportPadding;
     transparentBgCheckbox.checked = state.transparentBg;
     exportLogoOnlyCheckbox.checked = state.exportLogoOnly;
     italicModeSelect.value = state.italicMode;
@@ -811,13 +840,6 @@
 
     taglineSingleLineCheckbox.addEventListener('change', function(e) {
       state.taglineSingleLine = e.target.checked;
-      saveState();
-      render();
-    });
-
-    paddingSlider.addEventListener('input', function(e) {
-      state.padding = parseInt(e.target.value);
-      paddingValue.textContent = state.padding;
       saveState();
       render();
     });
@@ -936,6 +958,13 @@
       saveState();
     });
 
+    exportPaddingSlider.addEventListener('input', function(e) {
+      state.exportPadding = parseInt(e.target.value);
+      exportPaddingValue.textContent = state.exportPadding;
+      saveState();
+      render();
+    });
+
     transparentBgCheckbox.addEventListener('change', function(e) {
       state.transparentBg = e.target.checked;
       saveState();
@@ -944,6 +973,7 @@
     exportLogoOnlyCheckbox.addEventListener('change', function(e) {
       state.exportLogoOnly = e.target.checked;
       saveState();
+      render();
     });
 
     italicModeSelect.addEventListener('change', function(e) {
@@ -976,6 +1006,8 @@
   function render() {
     var grid = buildGrid(state.text);
     var hasText = grid.length > 0;
+    var showPreviewRule = shouldExportRule(hasText);
+    var showPreviewTagline = shouldExportTagline();
 
     asciiOutput.innerHTML = gridToHtml(grid, state.palette, state.gradientDirection, state.textColor);
     asciiOutput.style.fontSize = state.logoSize + 'px';
@@ -984,7 +1016,7 @@
     asciiOutput.style.transform = skewDeg ? 'skewX(' + skewDeg + 'deg)' : '';
     asciiOutput.style.display = 'inline-block';
 
-    if (state.showRule && hasText) {
+    if (showPreviewRule) {
       var ruleColor = getPaletteRuleColor();
       ruleOutput.textContent = generateRule(grid);
       ruleOutput.style.display = 'block';
@@ -994,7 +1026,7 @@
       ruleOutput.style.display = 'none';
     }
 
-    if (state.showTagline && state.tagline) {
+    if (showPreviewTagline) {
       taglineOutput.innerHTML = generateTaglineHtml(state.tagline, state.palette, state.gradientDirection, state.textColor);
       taglineOutput.style.display = 'block';
       taglineOutput.style.fontSize = state.taglineSize + 'px';
@@ -1008,8 +1040,9 @@
     }
 
     logoPreview.style.background = state.bgColor;
-    logoPreview.style.padding = state.padding + 'px';
+    logoPreview.style.padding = state.exportPadding + 'px';
     logoPreview.style.textAlign = state.align;
+    updatePreviewScale();
     saveState();
   }
 
@@ -1102,7 +1135,7 @@
       // Both JetBrains Mono and Space Grotesk already in the main import
     }
 
-    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + state.bgColor + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.padding + 'px; }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; display: inline-block;' + (skewDeg ? ' transform: skewX(' + skewDeg + 'deg);' : '') + ' }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: 8px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: 1.6; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
+    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + state.bgColor + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.exportPadding + 'px; }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; display: inline-block;' + (skewDeg ? ' transform: skewX(' + skewDeg + 'deg);' : '') + ' }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: 8px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: 1.6; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
 
     var blob = new Blob([html], { type: 'text/html' });
     var link = document.createElement('a');
@@ -1175,7 +1208,7 @@
 
       var taglineHeight = exportTagline ? state.taglineSize * scale * 1.8 : 0;
 
-      var pad = state.padding * scale;
+      var pad = state.exportPadding * scale;
       // Extra width needed when skew shears the ASCII block horizontally
       var pngSkewDeg = state.italicMode === 'skew' ? state.italicAmount : 0;
       var skewExtra = pngSkewDeg ? Math.abs(Math.tan(pngSkewDeg * Math.PI / 180)) * asciiHeight : 0;
@@ -1214,9 +1247,7 @@
           var skew = Math.tan(pngSkewDeg * Math.PI / 180);
           // Shear around the vertical centre of the ASCII block
           var asciiMidY = pad + asciiHeight / 2;
-          // Offset so the sheared block stays centred in its allocation
-          var shearShift = skew > 0 ? 0 : -skew * asciiHeight;
-          ctx.transform(1, 0, skew, 1, -skew * asciiMidY + shearShift / 2, 0);
+          ctx.transform(1, 0, skew, 1, -skew * asciiMidY, 0);
           asciiX += skewExtra / 2;
         }
 

@@ -80,6 +80,8 @@
 
   const MAX_TEXT_LENGTH = 12;
   const MAX_TAGLINE_LENGTH = 120;
+  const MIN_RULE_LENGTH_PERCENT = 25;
+  const MAX_RULE_LENGTH_PERCENT = 200;
   const STORAGE_KEY = 'abc-logo-generator:v4';
 
   // DOM Elements
@@ -119,6 +121,9 @@
   const exportScaleValue = document.getElementById('export-scale-value');
   const transparentBgCheckbox = document.getElementById('transparent-bg');
   const ruleStyleSelect = document.getElementById('rule-style');
+  const ruleLengthSlider = document.getElementById('rule-length');
+  const ruleLengthValue = document.getElementById('rule-length-value');
+  const ruleLengthGroup = document.getElementById('rule-length-group');
   const ruleStyleGroup = document.getElementById('rule-style-group');
   const ruleCustomGroup = document.getElementById('rule-custom-group');
   const ruleCustomCharInput = document.getElementById('rule-custom-char');
@@ -153,6 +158,7 @@
     align: 'center',
     showRule: true,
     ruleStyle: '\u2504',
+    ruleLengthPercent: 100,
     ruleCustomChar: '\u2500',
     showTagline: true,
     palette: 'sunset',
@@ -381,9 +387,20 @@
     return state.ruleStyle || '\u2504';
   }
 
+  function clampRuleLengthPercent(value) {
+    if (!Number.isFinite(value)) return 100;
+    return Math.max(MIN_RULE_LENGTH_PERCENT, Math.min(MAX_RULE_LENGTH_PERCENT, value));
+  }
+
+  function getRuleRepeatCount(grid) {
+    if (grid.length === 0) return 0;
+    var baseWidth = grid.contentCols || grid[0].length;
+    return Math.max(1, Math.round(baseWidth * state.ruleLengthPercent / 100));
+  }
+
   function generateRule(grid) {
     if (grid.length === 0) return '';
-    var width = grid.contentCols || grid[0].length;
+    var width = getRuleRepeatCount(grid);
     var ch = getRuleChar();
     var rule = '';
     for (var i = 0; i < width; i++) rule += ch;
@@ -472,6 +489,7 @@
         align: ['left', 'center', 'right'].indexOf(saved.align) !== -1 ? saved.align : state.align,
         showRule: typeof saved.showRule === 'boolean' ? saved.showRule : state.showRule,
         ruleStyle: saved.ruleStyle || state.ruleStyle,
+        ruleLengthPercent: clampRuleLengthPercent(saved.ruleLengthPercent),
         ruleCustomChar: saved.ruleCustomChar || state.ruleCustomChar,
         showTagline: typeof saved.showTagline === 'boolean' ? saved.showTagline : state.showTagline,
         palette: saved.palette && GRADIENT_PALETTES[saved.palette] ? saved.palette : state.palette,
@@ -552,6 +570,9 @@
     if (state.ruleStyle !== 'custom' && !ruleStyleSelect.querySelector('option[value="' + state.ruleStyle + '"]')) {
       ruleStyleSelect.value = 'custom';
     }
+    ruleLengthSlider.value = state.ruleLengthPercent;
+    ruleLengthValue.textContent = state.ruleLengthPercent;
+    ruleLengthGroup.style.display = state.showRule ? '' : 'none';
     ruleCustomCharInput.value = state.ruleCustomChar;
     ruleStyleSelect.style.display = state.showRule ? '' : 'none';
     ruleCustomCharInput.style.display = (state.showRule && state.ruleStyle === 'custom') ? '' : 'none';
@@ -688,6 +709,7 @@
 
     showRuleCheckbox.addEventListener('change', function(e) {
       state.showRule = e.target.checked;
+      ruleLengthGroup.style.display = state.showRule ? '' : 'none';
       ruleStyleSelect.style.display = state.showRule ? '' : 'none';
       ruleCustomCharInput.style.display = (state.showRule && state.ruleStyle === 'custom') ? '' : 'none';
       saveState();
@@ -697,6 +719,13 @@
     ruleStyleSelect.addEventListener('change', function(e) {
       state.ruleStyle = e.target.value;
       ruleCustomCharInput.style.display = state.ruleStyle === 'custom' ? '' : 'none';
+      saveState();
+      render();
+    });
+
+    ruleLengthSlider.addEventListener('input', function(e) {
+      state.ruleLengthPercent = clampRuleLengthPercent(parseInt(e.target.value, 10));
+      ruleLengthValue.textContent = state.ruleLengthPercent;
       saveState();
       render();
     });
@@ -947,9 +976,8 @@
 
       // Rule
       mctx.font = ruleFont;
-      var ruleCharWidth = mctx.measureText('\u2504').width;
-      var ruleCols = hasText ? (grid.contentCols || grid[0].length) : 0;
-      var ruleWidth = ruleCols * ruleCharWidth;
+      var ruleStr = state.showRule && hasText ? generateRule(grid) : '';
+      var ruleWidth = ruleStr ? mctx.measureText(ruleStr).width : 0;
       var ruleHeight = state.showRule && hasText ? state.logoSize * scale * 1.6 : 0;
 
       var taglineHeight = (state.showTagline && state.tagline) ? state.taglineSize * scale * 1.8 : 0;
@@ -1033,11 +1061,8 @@
         ctx.globalAlpha = 0.4;
         var ruleColor = getPaletteRuleColor();
         ctx.fillStyle = ruleColor;
-        var ruleStr = generateRule(grid);
         var ruleX = alignOffset(ruleWidth);
-        for (var ri = 0; ri < ruleStr.length; ri++) {
-          ctx.fillText(ruleStr[ri], ruleX + ri * ruleCharWidth, yOffset + ruleHeight * 0.15);
-        }
+        ctx.fillText(ruleStr, ruleX, yOffset + ruleHeight * 0.15);
         ctx.globalAlpha = 1.0;
         yOffset += ruleHeight;
       }

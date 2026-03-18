@@ -259,6 +259,10 @@ main {
   outline: none;
 }
 
+.rule-length-group {
+  margin-top: 0.75rem;
+}
+
 .rule-custom-input {
   width: 3.5rem;
   flex-shrink: 0;

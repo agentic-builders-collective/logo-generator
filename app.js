@@ -132,6 +132,7 @@
   const bgGradientDirectionGroup = document.getElementById('bg-gradient-direction-group');
   const bgGradientColor1Input = document.getElementById('bg-gradient-color-1');
   const bgGradientColor2Input = document.getElementById('bg-gradient-color-2');
+  const bgGradientColor3Input = document.getElementById('bg-gradient-color-3');
   const bgGradientDirectionSelect = document.getElementById('bg-gradient-direction');
   const copyTextBtn = document.getElementById('copy-text');
   const exportSettingsBtn = document.getElementById('export-settings');
@@ -153,6 +154,7 @@
   const customColorsGroup = document.getElementById('custom-colors-group');
   const customColor1Input = document.getElementById('custom-color-1');
   const customColor2Input = document.getElementById('custom-color-2');
+  const customColor3Input = document.getElementById('custom-color-3');
   const paletteContainer = document.getElementById('palette-options');
   const directionSelect = document.getElementById('gradient-direction');
   const italicModeSelect = document.getElementById('italic-mode');
@@ -175,6 +177,7 @@
       customBgColor: '#000000',
       bgGradientColor1: '#09090f',
       bgGradientColor2: '#1b1f38',
+      bgGradientColor3: '#2f1b4f',
       bgGradientDirection: 'vertical',
       logoSize: 26,
       taglineSize: 20,
@@ -197,6 +200,7 @@
       exportLogoOnly: false,
       customColor1: '#ff6b6b',
       customColor2: '#4ecdc4',
+      customColor3: '#45b7d1',
       italicMode: 'skew',
       italicAmount: -18
     };
@@ -259,7 +263,7 @@
       var angle = state.bgGradientDirection === 'horizontal'
         ? '90deg'
         : (state.bgGradientDirection === 'diagonal' ? '135deg' : '180deg');
-      return 'linear-gradient(' + angle + ', ' + state.bgGradientColor1 + ', ' + state.bgGradientColor2 + ')';
+      return 'linear-gradient(' + angle + ', ' + state.bgGradientColor1 + ', ' + state.bgGradientColor2 + ', ' + state.bgGradientColor3 + ')';
     }
     return state.bgColor;
   }
@@ -275,7 +279,8 @@
         gradient = ctx.createLinearGradient(0, 0, 0, height);
       }
       gradient.addColorStop(0, state.bgGradientColor1);
-      gradient.addColorStop(1, state.bgGradientColor2);
+      gradient.addColorStop(0.5, state.bgGradientColor2);
+      gradient.addColorStop(1, state.bgGradientColor3);
       ctx.fillStyle = gradient;
     } else {
       ctx.fillStyle = state.bgColor;
@@ -606,6 +611,9 @@
       customBgColor: customBgColor,
       bgGradientColor1: isHexColor(source.bgGradientColor1) ? source.bgGradientColor1 : defaults.bgGradientColor1,
       bgGradientColor2: isHexColor(source.bgGradientColor2) ? source.bgGradientColor2 : defaults.bgGradientColor2,
+      bgGradientColor3: isHexColor(source.bgGradientColor3)
+        ? source.bgGradientColor3
+        : (isHexColor(source.bgGradientColor2) ? source.bgGradientColor2 : defaults.bgGradientColor3),
       bgGradientDirection: normaliseChoice(source.bgGradientDirection, GRADIENT_DIRECTION_VALUES, defaults.bgGradientDirection),
       logoSize: clampNumber(rawLogoSize, 6, 48, defaults.logoSize),
       taglineSize: clampNumber(source.taglineSize, 8, 36, defaults.taglineSize),
@@ -628,6 +636,9 @@
       exportLogoOnly: typeof source.exportLogoOnly === 'boolean' ? source.exportLogoOnly : defaults.exportLogoOnly,
       customColor1: isHexColor(source.customColor1) ? source.customColor1 : defaults.customColor1,
       customColor2: isHexColor(source.customColor2) ? source.customColor2 : defaults.customColor2,
+      customColor3: isHexColor(source.customColor3)
+        ? source.customColor3
+        : (isHexColor(source.customColor2) ? source.customColor2 : defaults.customColor3),
       italicMode: italicMode,
       italicAmount: italicAmount
     };
@@ -759,7 +770,7 @@
   }
 
   function getCustomColors() {
-    return [state.customColor1, state.customColor2];
+    return [state.customColor1, state.customColor2, state.customColor3];
   }
 
   function getResolvedPalette(key) {
@@ -776,7 +787,7 @@
       if (key === 'custom') {
         btn.title = 'Custom';
         btn.classList.add('palette-swatch-custom');
-        btn.style.background = 'linear-gradient(135deg, ' + state.customColor1 + ', ' + state.customColor2 + ')';
+        btn.style.background = 'linear-gradient(135deg, ' + getCustomColors().join(', ') + ')';
         btn.innerHTML = getSettingsIconSvg();
       } else {
         var palette = GRADIENT_PALETTES[key];
@@ -792,7 +803,7 @@
   function updateCustomSwatch() {
     var swatch = paletteContainer.querySelector('[data-palette="custom"]');
     if (swatch) {
-      swatch.style.background = 'linear-gradient(135deg, ' + state.customColor1 + ', ' + state.customColor2 + ')';
+      swatch.style.background = 'linear-gradient(135deg, ' + getCustomColors().join(', ') + ')';
     }
   }
 
@@ -887,6 +898,7 @@
     bgGradientDirectionGroup.style.display = state.bgMode === 'gradient' ? '' : 'none';
     bgGradientColor1Input.value = state.bgGradientColor1;
     bgGradientColor2Input.value = state.bgGradientColor2;
+    bgGradientColor3Input.value = state.bgGradientColor3;
     bgGradientDirectionSelect.value = state.bgGradientDirection;
     alignOptions.forEach(function(button) {
       button.classList.toggle('active', button.dataset.align === state.align);
@@ -916,6 +928,7 @@
     italicValue.textContent = state.italicAmount;
     customColor1Input.value = state.customColor1;
     customColor2Input.value = state.customColor2;
+    customColor3Input.value = state.customColor3;
     customColorsGroup.style.display = state.palette === 'custom' ? '' : 'none';
     blockStyleGroup.style.display = FONT_OPTIONS[state.font].type === 'pixel' ? '' : 'none';
   }
@@ -1048,6 +1061,12 @@
       commitState();
     });
 
+    bgGradientColor3Input.addEventListener('input', function(e) {
+      state.bgGradientColor3 = e.target.value;
+      state.bgMode = 'gradient';
+      commitState();
+    });
+
     bgGradientDirectionSelect.addEventListener('change', function(e) {
       state.bgGradientDirection = e.target.value;
       state.bgMode = 'gradient';
@@ -1073,6 +1092,11 @@
 
     customColor2Input.addEventListener('input', function(e) {
       state.customColor2 = e.target.value;
+      commitState();
+    });
+
+    customColor3Input.addEventListener('input', function(e) {
+      state.customColor3 = e.target.value;
       commitState();
     });
 

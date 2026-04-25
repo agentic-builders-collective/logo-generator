@@ -92,6 +92,7 @@
   const RULE_STYLE_VALUES = ['┄', '─', '═', '━', '-', '=', '·', '•', '~', 'custom'];
   const BG_PRESET_VALUES = ['#000000', '#0d1117', '#1a1a2e', '#ffffff'];
   const BG_MODE_VALUES = ['solid', 'gradient'];
+  const EXPORT_ASPECT_RATIO_VALUES = ['auto', '1:1', '4:3', '3:2'];
   const MAX_EXPORT_PADDING = 200;
   const STORAGE_KEY = 'abc-logo-generator:v4';
 
@@ -119,7 +120,7 @@
   const taglineSpacingValue = document.getElementById('tagline-spacing-value');
   const taglineCaseSelect = document.getElementById('tagline-case');
   const taglineSingleLineCheckbox = document.getElementById('tagline-single-line');
-  const alignOptions = document.querySelectorAll('.align-option');
+  const alignOptions = document.querySelectorAll('.align-option[data-align]');
   const showRuleCheckbox = document.getElementById('show-rule');
   const showTaglineCheckbox = document.getElementById('show-tagline');
   const bgModeOptions = document.querySelectorAll('.bg-mode-option');
@@ -144,6 +145,7 @@
   const exportScaleValue = document.getElementById('export-scale-value');
   const exportPaddingSlider = document.getElementById('export-padding');
   const exportPaddingValue = document.getElementById('export-padding-value');
+  const exportAspectRatioOptions = document.querySelectorAll('.export-ratio-option');
   const transparentBgCheckbox = document.getElementById('transparent-bg');
   const exportLogoOnlyCheckbox = document.getElementById('export-logo-only');
   const ruleStyleSelect = document.getElementById('rule-style');
@@ -196,6 +198,7 @@
       gradientDirection: 'vertical',
       exportScale: 150,
       exportPadding: 72,
+      exportAspectRatio: 'auto',
       transparentBg: true,
       exportLogoOnly: false,
       customColor1: '#ff6b6b',
@@ -632,6 +635,7 @@
       gradientDirection: normaliseChoice(source.gradientDirection, GRADIENT_DIRECTION_VALUES, defaults.gradientDirection),
       exportScale: clampNumber(source.exportScale, 100, 300, defaults.exportScale),
       exportPadding: clampNumber(Number.isFinite(source.exportPadding) ? source.exportPadding : source.padding, 0, MAX_EXPORT_PADDING, defaults.exportPadding),
+      exportAspectRatio: normaliseChoice(source.exportAspectRatio, EXPORT_ASPECT_RATIO_VALUES, defaults.exportAspectRatio),
       transparentBg: typeof source.transparentBg === 'boolean' ? source.transparentBg : defaults.transparentBg,
       exportLogoOnly: typeof source.exportLogoOnly === 'boolean' ? source.exportLogoOnly : defaults.exportLogoOnly,
       customColor1: isHexColor(source.customColor1) ? source.customColor1 : defaults.customColor1,
@@ -854,6 +858,51 @@
     logoPreview.style.transform = scale < 1 ? 'scale(' + scale + ')' : '';
   }
 
+  function getExportAspectRatioValue() {
+    if (state.exportAspectRatio === '1:1') return 1;
+    if (state.exportAspectRatio === '4:3') return 4 / 3;
+    if (state.exportAspectRatio === '3:2') return 3 / 2;
+    return null;
+  }
+
+  function getAspectAdjustedSize(width, height, ratio) {
+    if (!ratio) return { width: width, height: height };
+    if (width / height < ratio) {
+      return { width: height * ratio, height: height };
+    }
+    return { width: width, height: width / ratio };
+  }
+
+  function getFlexAlignment() {
+    if (state.align === 'left') return 'flex-start';
+    if (state.align === 'right') return 'flex-end';
+    return 'center';
+  }
+
+  function applyPreviewAspectRatio() {
+    logoPreview.style.width = '';
+    logoPreview.style.height = '';
+    logoPreview.style.display = 'inline-block';
+    logoPreview.style.flexDirection = '';
+    logoPreview.style.justifyContent = '';
+    logoPreview.style.alignItems = '';
+
+    var ratio = getExportAspectRatioValue();
+    if (!ratio) return;
+
+    var naturalWidth = Math.max(logoPreview.scrollWidth, Math.ceil(logoPreview.getBoundingClientRect().width));
+    var naturalHeight = Math.max(logoPreview.scrollHeight, Math.ceil(logoPreview.getBoundingClientRect().height));
+    if (!naturalWidth || !naturalHeight) return;
+
+    var adjusted = getAspectAdjustedSize(naturalWidth, naturalHeight, ratio);
+    logoPreview.style.width = Math.ceil(adjusted.width) + 'px';
+    logoPreview.style.height = Math.ceil(adjusted.height) + 'px';
+    logoPreview.style.display = 'inline-flex';
+    logoPreview.style.flexDirection = 'column';
+    logoPreview.style.justifyContent = 'center';
+    logoPreview.style.alignItems = getFlexAlignment();
+  }
+
   function syncControls() {
     textInput.value = state.text;
     taglineInput.value = state.tagline;
@@ -911,6 +960,9 @@
     exportScaleValue.textContent = state.exportScale;
     exportPaddingSlider.value = state.exportPadding;
     exportPaddingValue.textContent = state.exportPadding;
+    exportAspectRatioOptions.forEach(function(button) {
+      button.classList.toggle('active', button.dataset.exportAspectRatio === state.exportAspectRatio);
+    });
     transparentBgCheckbox.checked = state.transparentBg;
     exportLogoOnlyCheckbox.checked = state.exportLogoOnly;
     italicModeSelect.value = state.italicMode;
@@ -1110,6 +1162,13 @@
       commitState();
     });
 
+    exportAspectRatioOptions.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        state.exportAspectRatio = btn.dataset.exportAspectRatio;
+        commitState();
+      });
+    });
+
     transparentBgCheckbox.addEventListener('change', function(e) {
       state.transparentBg = e.target.checked;
       commitState(false);
@@ -1183,6 +1242,7 @@
     logoPreview.style.background = getBackgroundCss();
     logoPreview.style.padding = state.exportPadding + 'px';
     logoPreview.style.textAlign = state.align;
+    applyPreviewAspectRatio();
     schedulePreviewScale();
   }
 
@@ -1269,8 +1329,12 @@
     var taglineHtml = shouldExportTagline()
       ? '<div class="tagline">' + generateTaglineHtml(state.tagline, state.palette, state.gradientDirection, state.textColor) + '</div>'
       : '';
+    var htmlLogoBoxStyle = '';
+    if (getExportAspectRatioValue()) {
+      htmlLogoBoxStyle = ' width: ' + Math.ceil(logoPreview.offsetWidth) + 'px; height: ' + Math.ceil(logoPreview.offsetHeight) + 'px; display: inline-flex; flex-direction: column; justify-content: center; align-items: ' + getFlexAlignment() + ';';
+    }
 
-    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'' + getExportGoogleFontsUrl() + '\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + getBackgroundCss() + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.exportPadding + 'px; }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; display: inline-block;' + (skewDeg ? ' transform: skewX(' + skewDeg + 'deg);' : '') + ' }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: ' + TAGLINE_WORD_SPACING + 'px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: ' + TAGLINE_LINE_HEIGHT + '; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
+    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'' + getExportGoogleFontsUrl() + '\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + getBackgroundCss() + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.exportPadding + 'px;' + htmlLogoBoxStyle + ' }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; display: inline-block;' + (skewDeg ? ' transform: skewX(' + skewDeg + 'deg);' : '') + ' }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: ' + TAGLINE_WORD_SPACING + 'px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: ' + TAGLINE_LINE_HEIGHT + '; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
 
     var blob = new Blob([html], { type: 'text/html' });
     var link = document.createElement('a');
@@ -1339,8 +1403,13 @@
       var taglineHeight = taglineLines.length * taglineLineHeight;
 
       var contentWidth = Math.max(asciiWidth + skewExtra, ruleWidth, taglineTotalWidth);
+      var contentHeight = asciiHeight + ruleHeight + taglineHeight;
       var canvasWidth = contentWidth + pad * 2;
-      var canvasHeight = asciiHeight + ruleHeight + taglineHeight + pad * 2;
+      var canvasHeight = contentHeight + pad * 2;
+      var aspectAdjustedSize = getAspectAdjustedSize(canvasWidth, canvasHeight, getExportAspectRatioValue());
+      canvasWidth = aspectAdjustedSize.width;
+      canvasHeight = aspectAdjustedSize.height;
+      var contentStartY = (canvasHeight - contentHeight) / 2;
 
       var canvas = document.createElement('canvas');
       canvas.width = Math.ceil(canvasWidth);
@@ -1371,7 +1440,7 @@
           ctx.save();
           var skew = Math.tan(pngSkewDeg * Math.PI / 180);
           // Shear around the vertical centre of the ASCII block
-          var asciiMidY = pad + asciiHeight / 2;
+          var asciiMidY = contentStartY + asciiHeight / 2;
           ctx.transform(1, 0, skew, 1, -skew * asciiMidY, 0);
           asciiX += skewExtra / 2;
         }
@@ -1392,7 +1461,7 @@
               color = cell.channel === 1 ? state.textColor : dimColor(state.textColor, 0.4);
             }
             ctx.fillStyle = color;
-            ctx.fillText(cell.char, asciiX + ci * asciiCharWidth, pad + ri * asciiLineHeight);
+            ctx.fillText(cell.char, asciiX + ci * asciiCharWidth, contentStartY + ri * asciiLineHeight);
           });
         });
 
@@ -1401,7 +1470,7 @@
         }
       }
 
-      var yOffset = pad + asciiHeight;
+      var yOffset = contentStartY + asciiHeight;
 
       // Draw rule
       if (exportRule) {

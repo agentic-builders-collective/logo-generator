@@ -43,18 +43,24 @@
   };
 
   const GRADIENT_PALETTES = {
-    sunset:  { name: 'Sunset',  colors: ['#ff9966', '#ff5e62'] },
-    ocean:   { name: 'Ocean',   colors: ['#667eea', '#764ba2'] },
-    fire:    { name: 'Fire',    colors: ['#ff0844', '#ffb199'] },
-    matrix:  { name: 'Matrix',  colors: ['#00ff41', '#008f11'] },
-    nebula:  { name: 'Nebula',  colors: ['#654ea3', '#eaafc8'] },
-    gold:    { name: 'Gold',    colors: ['#f7971e', '#ffd200'] },
-    forest:  { name: 'Forest',  colors: ['#134e5e', '#71b280'] },
-    mint:    { name: 'Mint',    colors: ['#00d2ff', '#3a7bd5'] },
-    ice:     { name: 'Ice',     colors: ['#e0eafc', '#cfdef3'] },
-    coral:   { name: 'Coral',   colors: ['#ff9a9e', '#fad0c4'] },
-    aurora:  { name: 'Aurora',  colors: ['#a8ff78', '#78ffd6'] },
-    custom:  { name: 'Custom',  colors: null }
+    sunset:    { name: 'Sunset',    colors: ['#ffb36b', '#ff5f6d'], surface: 'dark', background: '#000000' },
+    ocean:     { name: 'Ocean',     colors: ['#7aa2ff', '#a78bfa'], surface: 'dark', background: '#0d1117' },
+    fire:      { name: 'Fire',      colors: ['#ff335f', '#ff9a62'], surface: 'dark', background: '#000000' },
+    matrix:    { name: 'Matrix',    colors: ['#00ff41', '#00a82d'], surface: 'dark', background: '#000000' },
+    nebula:    { name: 'Nebula',    colors: ['#9b7bff', '#f09cc4'], surface: 'dark', background: '#1a1a2e' },
+    gold:      { name: 'Gold',      colors: ['#f7971e', '#ffd200'], surface: 'dark', background: '#000000' },
+    forest:    { name: 'Forest',    colors: ['#42b883', '#79d2a6'], surface: 'dark', background: '#0d1117' },
+    mint:      { name: 'Mint',      colors: ['#25d9ff', '#5b8cff'], surface: 'dark', background: '#0d1117' },
+    ice:       { name: 'Ice',       colors: ['#78b5ff', '#a5d8ff'], surface: 'dark', background: '#0d1117' },
+    coral:     { name: 'Coral',     colors: ['#ff7e8b', '#ffb3a7'], surface: 'dark', background: '#000000' },
+    aurora:    { name: 'Aurora',    colors: ['#b2ff7a', '#68e6c2'], surface: 'dark', background: '#0d1117' },
+    neon:      { name: 'Neon',      colors: ['#f472ff', '#60a5fa'], surface: 'dark', background: '#0d1117' },
+    ink:       { name: 'Ink',       colors: ['#0f172a', '#334155'], surface: 'light', background: '#ffffff' },
+    cobalt:    { name: 'Cobalt',    colors: ['#1d4ed8', '#0f172a'], surface: 'light', background: '#f8fafc' },
+    evergreen: { name: 'Evergreen', colors: ['#14532d', '#0f766e'], surface: 'light', background: '#f7f7f2' },
+    berry:     { name: 'Berry',     colors: ['#86198f', '#9f1239'], surface: 'light', background: '#fff7fb' },
+    ruby:      { name: 'Ruby',      colors: ['#991b1b', '#b91c1c'], surface: 'light', background: '#fffaf5' },
+    custom:    { name: 'Custom',    colors: null, surface: 'custom' }
   };
 
   const FONT_OPTIONS = {
@@ -90,7 +96,7 @@
   const GRADIENT_DIRECTION_VALUES = ['vertical', 'horizontal', 'diagonal'];
   const ITALIC_MODE_VALUES = ['none', 'skew', 'block'];
   const RULE_STYLE_VALUES = ['┄', '─', '═', '━', '-', '=', '·', '•', '~', 'custom'];
-  const BG_PRESET_VALUES = ['#000000', '#0d1117', '#1a1a2e', '#ffffff'];
+  const BG_PRESET_VALUES = ['#000000', '#0d1117', '#1a1a2e', '#ffffff', '#f8fafc', '#f7f7f2', '#fff7fb', '#fffaf5'];
   const BG_MODE_VALUES = ['solid', 'gradient'];
   const EXPORT_ASPECT_RATIO_VALUES = ['auto', '1:1', '4:3', '3:2'];
   const MAX_EXPORT_PADDING = 200;
@@ -789,13 +795,16 @@
       btn.className = 'palette-swatch';
       btn.dataset.palette = key;
       if (key === 'custom') {
-        btn.title = 'Custom';
+        btn.title = 'Custom palette';
+        btn.setAttribute('aria-label', btn.title);
         btn.classList.add('palette-swatch-custom');
         btn.style.background = 'linear-gradient(135deg, ' + getCustomColors().join(', ') + ')';
         btn.innerHTML = getSettingsIconSvg();
       } else {
         var palette = GRADIENT_PALETTES[key];
-        btn.title = palette.name;
+        btn.dataset.surface = palette.surface;
+        btn.title = palette.name + ' · Best on ' + palette.surface + ' backgrounds';
+        btn.setAttribute('aria-label', btn.title);
         if (palette.colors) {
           btn.style.background = 'linear-gradient(135deg, ' + palette.colors.join(', ') + ')';
         }
@@ -1129,6 +1138,12 @@
       var swatch = e.target.closest('.palette-swatch');
       if (!swatch) return;
       state.palette = swatch.dataset.palette;
+      var palette = GRADIENT_PALETTES[state.palette];
+      if (palette && palette.background) {
+        state.bgMode = 'solid';
+        state.bgUseCustom = false;
+        state.bgColor = palette.background;
+      }
       commitState();
     });
 

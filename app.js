@@ -100,6 +100,8 @@
   const BG_MODE_VALUES = ['solid', 'gradient'];
   const EXPORT_ASPECT_RATIO_VALUES = ['auto', '1:1', '4:3', '3:2'];
   const MAX_EXPORT_PADDING = 200;
+  const MAX_PNG_DIMENSION = 8192;
+  const MAX_PNG_PIXELS = 16777216;
   const STORAGE_KEY = 'abc-logo-generator:v4';
 
   // DOM Elements
@@ -1263,13 +1265,17 @@
 
   // --- Export ---
 
-  function copyText() {
+  function generateText() {
     var grid = buildGrid(state.text);
     var hasText = grid.length > 0;
     var ascii = gridToPlainText(grid);
     var rule = shouldExportRule(hasText) ? '\n' + generateRule(grid) : '';
     var tagline = shouldExportTagline() ? '\n' + generateTaglinePlain(state.tagline) : '';
-    var fullText = ascii + rule + tagline;
+    return ascii + rule + tagline;
+  }
+
+  function copyText() {
+    var fullText = generateText();
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(fullText)
@@ -1332,14 +1338,14 @@
     reader.readAsText(file);
   }
 
-  function exportHtml() {
+  function generateHtml() {
     var grid = buildGrid(state.text);
     var hasText = grid.length > 0;
     var skewDeg = state.italicMode === 'skew' ? state.italicAmount : 0;
     var asciiHtml = gridToHtml(grid, state.palette, state.gradientDirection, state.textColor);
     var ruleColor = getPaletteRuleColor();
     var ruleHtml = shouldExportRule(hasText)
-      ? '<div class="rule" style="color:' + ruleColor + '">' + generateRule(grid) + '</div>'
+      ? '<div class="rule" style="color:' + ruleColor + '">' + escapeHtml(generateRule(grid)) + '</div>'
       : '';
     var taglineHtml = shouldExportTagline()
       ? '<div class="tagline">' + generateTaglineHtml(state.tagline, state.palette, state.gradientDirection, state.textColor) + '</div>'
@@ -1351,7 +1357,11 @@
 
     var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(state.text) + ' Logo</title>\n<style>\n  @import url(\'' + getExportGoogleFontsUrl() + '\');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: ' + getBackgroundCss() + '; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: \'JetBrains Mono\', \'Courier New\', monospace; }\n  .logo { text-align: ' + state.align + '; padding: ' + state.exportPadding + 'px;' + htmlLogoBoxStyle + ' }\n  .ascii { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; line-height: ' + state.lineHeight + '; font-weight: 800; white-space: pre; margin-bottom: 8px; display: inline-block;' + (skewDeg ? ' transform: skewX(' + skewDeg + 'deg);' : '') + ' }\n  .rule { font-family: \'JetBrains Mono\', \'Courier New\', monospace; font-size: ' + state.logoSize + 'px; white-space: pre; margin-bottom: 8px; opacity: 0.4; }\n  .tagline { font-family: ' + TAGLINE_FONT_MAP[state.taglineFont] + '; font-size: ' + state.taglineSize + 'px; font-weight: 400; letter-spacing: ' + state.taglineSpacing + 'px; word-spacing: ' + TAGLINE_WORD_SPACING + 'px; text-transform: ' + state.taglineTransform + '; white-space: ' + (state.taglineSingleLine ? 'nowrap' : 'normal') + '; line-height: ' + TAGLINE_LINE_HEIGHT + '; }\n</style>\n</head>\n<body>\n<div class="logo">\n  <div class="ascii">' + asciiHtml + '</div>\n  ' + ruleHtml + '\n  ' + taglineHtml + '\n</div>\n</body>\n</html>';
 
-    var blob = new Blob([html], { type: 'text/html' });
+    return html;
+  }
+
+  function exportHtml() {
+    var blob = new Blob([generateHtml()], { type: 'text/html' });
     var link = document.createElement('a');
     link.download = (state.text || 'logo') + '-logo.html';
     link.href = URL.createObjectURL(blob);
@@ -1362,7 +1372,7 @@
 
   // --- PNG Export ---
 
-  function exportPng() {
+  function generateCanvas() {
     var grid = buildGrid(state.text);
     var hasText = grid.length > 0;
     var exportRule = shouldExportRule(hasText);
@@ -1372,7 +1382,6 @@
 
     var scale = state.exportScale / 100;
 
-    document.fonts.ready.then(function() {
       // Measure dimensions
       var asciiFont = 'bold ' + (state.logoSize * scale) + 'px "JetBrains Mono", monospace';
       var taglineFontCss = (state.taglineSize * scale) + 'px ' + TAGLINE_FONT_MAP[state.taglineFont];
@@ -1426,9 +1435,14 @@
       canvasHeight = aspectAdjustedSize.height;
       var contentStartY = (canvasHeight - contentHeight) / 2;
 
+      var pixelWidth = Math.ceil(canvasWidth);
+      var pixelHeight = Math.ceil(canvasHeight);
+      if (pixelWidth > MAX_PNG_DIMENSION || pixelHeight > MAX_PNG_DIMENSION || pixelWidth * pixelHeight > MAX_PNG_PIXELS) {
+        throw new Error('PNG export exceeds 8192 pixels per side or 16777216 pixels total. Reduce logo size, export scale, padding or aspect ratio.');
+      }
       var canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(canvasWidth);
-      canvas.height = Math.ceil(canvasHeight);
+      canvas.width = pixelWidth;
+      canvas.height = pixelHeight;
       var ctx = canvas.getContext('2d');
 
       // Background
@@ -1529,7 +1543,16 @@
         });
       }
 
-      canvas.toBlob(function(blob) {
+      return canvas;
+  }
+
+  function exportPng() {
+    document.fonts.ready.then(function() {
+      generateCanvas().toBlob(function(blob) {
+        if (!blob || !blob.size) {
+          showToast('Unable to encode PNG. Try a smaller export.');
+          return;
+        }
         var link = document.createElement('a');
         link.download = (state.text || 'logo') + '-logo.png';
         link.href = URL.createObjectURL(blob);
@@ -1537,7 +1560,140 @@
         URL.revokeObjectURL(link.href);
         showToast('PNG exported.');
       }, 'image/png');
+    }).catch(function(error) {
+      showToast(error.message);
     });
+  }
+
+  // A transport-independent browser API. No downloads, clipboard writes or persistence.
+  function getAgentOptions() {
+    var fonts = {};
+    Object.keys(FONT_OPTIONS).forEach(function(key) {
+      fonts[key] = {
+        name: FONT_OPTIONS[key].name,
+        characters: Object.keys(key === 'pixel' ? PIXEL_PATTERNS : CFONTS_DATA[key].chars).join('')
+      };
+    });
+    return {
+      version: 1,
+      presets: ['abc', 'custom'],
+      formats: ['png', 'html', 'text', 'settings'],
+      pngLimits: { maxDimension: MAX_PNG_DIMENSION, maxPixels: MAX_PNG_PIXELS },
+      defaults: getDefaultState(),
+      fonts: fonts,
+      palettes: JSON.parse(JSON.stringify(GRADIENT_PALETTES))
+    };
+  }
+
+  async function generateForAgent(request = {}) {
+    if (!request || typeof request !== 'object' || Array.isArray(request)) {
+      throw new Error('Expected a request object');
+    }
+    Object.keys(request).forEach(function(key) {
+      if (['preset', 'format', 'settings'].indexOf(key) === -1) throw new Error('Unknown request field: ' + key);
+    });
+    var preset = request.preset === undefined ? 'abc' : request.preset;
+    var format = request.format === undefined ? 'png' : request.format;
+    if (['abc', 'custom'].indexOf(preset) === -1) throw new Error('Unknown preset: ' + preset);
+    if (['png', 'html', 'text', 'settings'].indexOf(format) === -1) throw new Error('Unknown format: ' + format);
+    var settings = request.settings === undefined ? {} : request.settings;
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) throw new Error('Expected a settings object');
+    var defaults = getDefaultState();
+    var dictionaries = { font: FONT_OPTIONS, blockStyle: BLOCK_STYLES, palette: GRADIENT_PALETTES, taglineFont: TAGLINE_FONT_MAP };
+    Object.keys(settings).forEach(function(key) {
+      if (!Object.hasOwn(defaults, key)) throw new Error('Unknown setting: ' + key);
+      if (typeof settings[key] !== typeof defaults[key]) throw new Error('Invalid type for setting: ' + key);
+      if (Object.hasOwn(dictionaries, key) && !Object.hasOwn(dictionaries[key], settings[key])) {
+        throw new Error('Invalid setting: ' + key);
+      }
+    });
+    if (preset === 'abc' && settings.text !== undefined && settings.text !== 'ABC') {
+      throw new Error('Use preset "custom" for text other than ABC');
+    }
+    if (preset === 'custom') {
+      defaults.text = '';
+      defaults.tagline = '';
+    }
+    var nextState = normaliseState(Object.assign(defaults, settings));
+    Object.keys(settings).forEach(function(key) {
+      if (nextState[key] !== settings[key]) throw new Error('Invalid or out-of-range setting: ' + key);
+    });
+    var characters = nextState.font === 'pixel' ? PIXEL_PATTERNS : CFONTS_DATA[nextState.font].chars;
+    var text = nextState.font === 'pixel' ? nextState.text.toLowerCase() : nextState.text.toUpperCase();
+    if (!text || text.split('').some(function(char) { return !Object.hasOwn(characters, char); })) {
+      throw new Error('Text must contain only supported characters for ' + nextState.font + '; see getOptions().fonts');
+    }
+    if (format === 'png' || format === 'html') {
+      await document.fonts.ready;
+      await Promise.all([
+        document.fonts.load('800 ' + nextState.logoSize + 'px "JetBrains Mono"'),
+        document.fonts.load(nextState.taglineSize + 'px ' + TAGLINE_FONT_MAP[nextState.taglineFont])
+      ]);
+    }
+    // Keep the shared renderer's state swap synchronous, so concurrent calls cannot mix settings.
+    var previousState = state;
+    var measurePreview = format === 'html' && nextState.exportAspectRatio !== 'auto';
+    try {
+      state = nextState;
+      if (measurePreview) render();
+      var data;
+      var mimeType;
+      if (format === 'png') {
+        var dataUrl = generateCanvas().toDataURL('image/png');
+        var prefix = 'data:image/png;base64,';
+        if (!dataUrl.startsWith(prefix) || dataUrl.length === prefix.length) {
+          throw new Error('Unable to encode PNG. Try a smaller export.');
+        }
+        data = dataUrl.slice(prefix.length);
+        mimeType = 'image/png';
+      } else if (format === 'html') {
+        data = generateHtml();
+        mimeType = 'text/html';
+      } else if (format === 'text') {
+        data = generateText();
+        mimeType = 'text/plain';
+      } else {
+        data = JSON.stringify({ app: 'abc-logo-generator', version: SETTINGS_EXPORT_VERSION, settings: nextState }, null, 2);
+        mimeType = 'application/json';
+      }
+      return { version: 1, format: format, mimeType: mimeType, encoding: format === 'png' ? 'base64' : 'utf8', data: data, settings: Object.assign({}, nextState) };
+    } finally {
+      state = previousState;
+      if (measurePreview) render();
+    }
+  }
+
+  async function registerAgentTools() {
+    if (!document.modelContext || typeof document.modelContext.registerTool !== 'function') return;
+    var properties = {
+      format: { type: 'string', enum: ['png', 'html', 'text', 'settings'], description: 'Output format; defaults to PNG bytes as base64.' },
+      font: { type: 'string', enum: Object.keys(FONT_OPTIONS), description: 'ASCII font; defaults to block. Pixel supports letters only.' },
+      palette: { type: 'string', enum: Object.keys(GRADIENT_PALETTES).filter(function(key) { return key !== 'custom'; }), description: 'Colour palette; defaults to ice.' },
+      tagline: { type: 'string', maxLength: MAX_TAGLINE_LENGTH, description: 'Optional title. Defaults to agentic builders collective for ABC, empty for custom text.' },
+      exportAspectRatio: { type: 'string', enum: EXPORT_ASPECT_RATIO_VALUES, description: 'Output shape; defaults to auto.' },
+      transparentBg: { type: 'boolean', description: 'Transparent PNG background; defaults to true.' },
+      exportLogoOnly: { type: 'boolean', description: 'Omit title and separator; defaults to false.' }
+    };
+    await Promise.all(['abc', 'custom'].map(function(preset) {
+      var toolProperties = Object.assign({}, properties);
+      if (preset === 'custom') {
+        toolProperties.text = { type: 'string', minLength: 1, maxLength: MAX_TEXT_LENGTH, description: 'Logo text supported by the chosen font (12 characters maximum).' };
+      }
+      return document.modelContext.registerTool({
+        name: preset === 'abc' ? 'generate_abc_logo' : 'generate_logo',
+        description: preset === 'abc'
+          ? 'Generate an Agentic Builders Collective (ABC) ASCII logo. No arguments needed. Returns PNG base64 by default, or HTML, text or settings JSON. Does not download files or change saved settings.'
+          : 'Generate an ASCII logo with custom text and optional font, palette and layout. Returns PNG base64 by default, or HTML, text or settings JSON. Does not download files or change saved settings.',
+        inputSchema: { type: 'object', properties: toolProperties, required: preset === 'custom' ? ['text'] : [], additionalProperties: false },
+        annotations: { readOnlyHint: true },
+        execute: function(params) {
+          var settings = Object.assign({}, params);
+          var format = settings.format;
+          delete settings.format;
+          return generateForAgent({ preset: preset, format: format, settings: settings });
+        }
+      });
+    }));
   }
 
   function showToast(message) {
@@ -1553,4 +1709,8 @@
   }
 
   init();
+  window.logoGenerator = Object.freeze({ getOptions: getAgentOptions, generate: generateForAgent });
+  registerAgentTools().catch(function(error) {
+    console.warn('WebMCP tools unavailable; the logo generator and JavaScript API remain usable.', error);
+  });
 })();

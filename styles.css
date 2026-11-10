@@ -50,6 +50,30 @@ header p {
   font-size: 0.85rem;
 }
 
+.agent-instructions {
+  margin-bottom: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.agent-instructions p + p {
+  margin-top: 0.5rem;
+}
+
+.agent-instructions strong {
+  color: var(--text-primary);
+}
+
+.agent-instructions code {
+  font-size: 1rem;
+}
+
+.agent-instructions a {
+  color: var(--accent);
+}
+
 main {
   display: grid;
   grid-template-columns: 1fr 320px;

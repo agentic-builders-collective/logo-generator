@@ -2,7 +2,7 @@
 
 ## Agent quick start
 
-1. Open the generator page. If your browser agent discovers `generate_abc_logo` or `generate_logo`, use the matching WebMCP tool and its advertised schema.
+1. Open the [generator page](./). Its API and WebMCP tools run there, not on the ABC homepage. If your browser agent discovers `generate_abc_logo` or `generate_logo`, use the matching WebMCP tool and its advertised schema.
 2. If WebMCP is unavailable but your browser tool can execute page JavaScript, call `await window.logoGenerator.generate()` in that page for the default ABC PNG. Missing `document.modelContext` is not an API failure: no browser flags, MCP installation or backend are needed for this fallback. Use the form only when neither WebMCP nor page JavaScript is accessible.
 3. For a [square sunset ABC logo](#easy-abc-use-case) or [custom text](#other-supported-logos), use the examples below. Read `window.logoGenerator.getOptions()` for supported values. JavaScript requests nest style options under `settings`; WebMCP tools take flat arguments. Do not interchange these schemas.
 4. Save the generated output, not a screenshot of the editor. For PNG, decode the returned `data` as base64 bytes into a `.png` file; it has no data-URL prefix. HTML, text and settings outputs use UTF-8. Generation returns data without triggering a download or changing the editor.

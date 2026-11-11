@@ -26,6 +26,10 @@ test('agents generate ABC and custom logos without changing the editor', async (
   const browser = (...args) => exec('agent-browser', ['--session', session, ...browserFlags, ...args], { maxBuffer: 1024 * 1024 });
   try {
     await browser('open', 'http://127.0.0.1:' + server.address().port);
+    const instructions = await browser('snapshot');
+    assert.match(instructions.stdout, /window\.logoGenerator\.generate\(\)/, 'API guidance remains in accessibility snapshots');
+    const interactive = await browser('snapshot', '-i');
+    assert.match(interactive.stdout, /link "Agent API instructions/, 'agents can discover documentation without WebMCP');
     const { stdout } = await browser('eval', '(' + (async () => {
       function check(condition, message) { if (!condition) throw new Error(message); }
       check(!document.modelContext, 'fallback browser must not have WebMCP');
